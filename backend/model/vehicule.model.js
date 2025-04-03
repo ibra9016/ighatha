@@ -4,6 +4,11 @@ const db =require('../config/db');
 const {Schema} = mongoose;
 
 const vehiculeSchema = new Schema({
+    plateNb :{
+        type:String,
+        required:true,
+        unique:true
+    },
     model:{
         type:String,
         required:true
@@ -16,7 +21,7 @@ const vehiculeSchema = new Schema({
         type:Number,
         required:true
     },
-    status:{
+    isOccupied:{
         type:Boolean,
         required:true
     }

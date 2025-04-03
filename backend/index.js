@@ -2,6 +2,7 @@ const app = require('./app');
 const db = require('./config/db');
 const userModel = require('./model/user.model');
 const vehiculeModel = require('./model/vehicule.model');
+const centerModel = require('./model/center.model');
 
 const port = 3000;
 

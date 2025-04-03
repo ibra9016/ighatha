@@ -11,6 +11,9 @@ class _RegisterpageState extends State<Registerpage> {
   TextEditingController usernameController = TextEditingController();
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
+  void resgisterUser() async{
+    
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
