@@ -25,19 +25,8 @@ final TextEditingController _emailController1 = TextEditingController();
     return Scaffold( backgroundColor: Color.fromARGB(224, 255, 255, 255),
       body: Stack(
         children: [
-          //Positioned image
-          // Positioned(
-            
-          //   top: 50,
-          //   left: MediaQuery.of(context).size.width / 4, // Adjust as needed
-          //   right: MediaQuery.of(context).size.width / 4, // Adjust as needed
-          //   child: Image(
-          //    image: AssetImage('images_removebg_preview_0Fy_icon.ico'),width: 5,
-          //  ),
-          // ),
-        
-          Container(
-            child: Image.asset("assets/images/images-removebg-preview.png",height: 100,width: 100)
+          Container(margin: EdgeInsets.only(left: 135,top: 10),
+            child: Image.asset("assets/images/images-removebg-preview.png",height: 180,width: 180)
           ),
           Center(
             child: Container(
