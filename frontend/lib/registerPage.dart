@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class Registerpage extends StatefulWidget {
   const Registerpage({super.key});
@@ -10,16 +12,32 @@ class Registerpage extends StatefulWidget {
 class _RegisterpageState extends State<Registerpage> {
     bool _obscureText = true;
       final TextEditingController _namecontroller = TextEditingController();
-final TextEditingController _emailController1 = TextEditingController();
-  final TextEditingController _passwordController2 = TextEditingController();
+      final TextEditingController _emailController1 = TextEditingController();
+      final TextEditingController _passwordController2 = TextEditingController();
       // ignore: unused_element
       void _togglePasswordVisibility() {
     setState(() {
       _obscureText = !_obscureText;
     });
-  }void resgisterUser() async{
-    
   }
+
+  void resgisterUser() async{
+    var regBody = {
+      "email": _emailController1.text,
+      "password":_passwordController2.text
+    };
+
+    var response = await http.post(Uri.parse('http://192.168.1.101:3000/userResgistration'),
+                                      headers: {"Content-type":"application/json"},
+                                      body: jsonEncode(regBody));
+    print(response.body);
+    setState(() {
+      _emailController1.clear();
+      _passwordController2.clear();
+    });
+  }
+  
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold( backgroundColor: Color.fromARGB(224, 255, 255, 255),
@@ -86,7 +104,9 @@ final TextEditingController _emailController1 = TextEditingController();
                     onPressed: () {
                       // Registration logic here
                     },
-                    child: Text('Sign up'),
+                    child: GestureDetector(onTap: ()=>{
+                      resgisterUser()
+                    } ,child: Text('Sign up')),
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Color.fromARGB(255, 141, 23, 19),
                       backgroundColor: Colors.white,
