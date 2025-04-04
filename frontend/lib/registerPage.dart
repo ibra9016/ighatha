@@ -12,9 +12,10 @@ class Registerpage extends StatefulWidget {
 class _RegisterpageState extends State<Registerpage> {
   var role = "";
   bool _obscureText = true;
-  final TextEditingController _namecontroller = TextEditingController();
-  final TextEditingController _emailController1 = TextEditingController();
-  final TextEditingController _passwordController2 = TextEditingController();
+   TextEditingController _namecontroller = TextEditingController();
+   TextEditingController _emailController1 = TextEditingController();
+   TextEditingController _passwordController2 = TextEditingController();
+   TextEditingController _phonecontroller = TextEditingController();
   // ignore: unused_element
   void _togglePasswordVisibility() {
     setState(() {
@@ -28,14 +29,16 @@ class _RegisterpageState extends State<Registerpage> {
     } else {
       if (role == "user") {
         resgisterUser();
-      } else {}
+      } else {
+
+      }
     }
   }
 
   void resgisterUser() async {
     var regBody = {
       "email": _emailController1.text,
-      "password": _passwordController2.text,
+      "password": _passwordController2.text
     };
 
     var response = await http.post(
@@ -84,20 +87,25 @@ class _RegisterpageState extends State<Registerpage> {
                     children: [
                       GestureDetector(
                         onTap: () {
-                          role = "user";
+                          setState(() {
+                            role = "user";
+                          });
+                          
                         },
                         child: Text("User"),
                       ),
                       SizedBox(width: 40),
                       GestureDetector(
                         onTap: () {
-                          role = "admin";
+                          setState(() {
+                            role = "admin";
+                          });
                         },
                         child: Text("Admin"),
                       ),
                     ],
                   ),
-                  if(role == "user"){
+                  if(role == "admin")...{
                   SizedBox(height: 20),
                   TextField(
                     controller: _namecontroller,
@@ -162,7 +170,49 @@ class _RegisterpageState extends State<Registerpage> {
                     ),
                   ),
                   }
-                ],
+                
+                else if(role == "user")...{
+                  SizedBox(height: 20),
+                  TextField(
+                    controller: _namecontroller,
+                    decoration: InputDecoration(
+                      hintText: ' Full Name',
+                      hintStyle: TextStyle(
+                        color: const Color.fromARGB(137, 73, 70, 70),
+                      ),
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 15),
+                  TextField(
+                    controller: _phonecontroller,
+                    decoration: InputDecoration(
+                      hintText: 'Phone Number',
+                      hintStyle: TextStyle(
+                        color: const Color.fromARGB(137, 73, 70, 70),
+                      ),
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 15),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Registration logic here
+                    },
+                    child: GestureDetector(
+                      onTap: () => {},
+                      child: Text('Sign up'),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Color.fromARGB(255, 141, 23, 19),
+                      backgroundColor: Colors.white,
+                    ),
+                  ),
+                }],
               ),
             ),
           ),
