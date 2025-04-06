@@ -6,25 +6,29 @@ const bcrypt = require('bcrypt');
 const {Schema} = mongoose;
 
 const userSchema = new Schema({
-    // username:{
-    //     type:String,
-    //     required:true
-    // },
-    email: {
-        type:String,
-        required:true,
-        unique:true
-    },
-    password: {
+       fullName:{
         type:String,
         required:true
     },
+    email: {
+        type:String,
+    },
+    password: {
+        type:String,
+    },
     isAdmin:{
         type:Boolean,
+    },
+    phoneNb:{
+        type:Number,
     }
 });
 
 userSchema.pre('save',async function() {
+    if(this.password == null){
+
+    }
+    else{
     try{
         var user = this;    
         const salt = await(bcrypt.genSalt(10));
@@ -34,7 +38,7 @@ userSchema.pre('save',async function() {
     catch(err){
         throw err;
     }
-    
+}
 })
 
 

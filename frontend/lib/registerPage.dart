@@ -36,20 +36,21 @@ class _RegisterpageState extends State<Registerpage> {
   }
 
   void resgisterUser() async {
+    print("working");
     var regBody = {
-      "email": _emailController1.text,
-      "password": _passwordController2.text
+      "fullName": _namecontroller.text,
+      "phoneNb": _phonecontroller.text
     };
 
     var response = await http.post(
-      Uri.parse('http://192.168.1.101:3000/userResgistration'),
+      Uri.parse('http://192.168.43.191:3000/userResgistration'),
       headers: {"Content-type": "application/json"},
-      body: jsonEncode(regBody),
+      body: jsonEncode(regBody)
     );
     print(response.body);
     setState(() {
-      _emailController1.clear();
-      _passwordController2.clear();
+      _namecontroller.clear();
+      _phonecontroller.clear();
     });
   }
 
@@ -78,10 +79,6 @@ class _RegisterpageState extends State<Registerpage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Text(
-                  //   'Information Admin',
-                  //   style: TextStyle(color: Colors.white, fontSize: 24),
-                  // ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -202,11 +199,10 @@ class _RegisterpageState extends State<Registerpage> {
                   ElevatedButton(
                     onPressed: () {
                       // Registration logic here
+                      resgisterUser();
                     },
-                    child: GestureDetector(
-                      onTap: () => {},
-                      child: Text('Sign up'),
-                    ),
+                      child: Text('Signup'),
+                    
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Color.fromARGB(255, 141, 23, 19),
                       backgroundColor: Colors.white,

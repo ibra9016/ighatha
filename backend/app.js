@@ -8,6 +8,6 @@ const app = express();
 app.use(body_parser.json());
 app.use('/',userRoute);
 app.use('/',vehiculeRoute);
-app.use('/',centerRoute)
+app.use('/',centerRoute);
 
 module.exports = app;
