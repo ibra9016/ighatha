@@ -36,7 +36,6 @@ class _RegisterpageState extends State<Registerpage> {
   }
 
   void resgisterUser() async {
-    print("working");
     var regBody = {
       "fullName": _namecontroller.text,
       "phoneNb": _phonecontroller.text
