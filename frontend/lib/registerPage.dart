@@ -42,7 +42,7 @@ class _RegisterpageState extends State<Registerpage> {
     };
 
     var response = await http.post(
-      Uri.parse('http://192.168.43.191:3000/userResgistration'),
+      Uri.parse('http://192.168.1.101:3000/userResgistration'),
       headers: {"Content-type": "application/json"},
       body: jsonEncode(regBody)
     );
