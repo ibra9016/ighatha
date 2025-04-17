@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:frontend/config.dart';
 import 'package:http/http.dart' as http;
+import 'components/myTextField.dart';
+import 'components/my_button.dart';
 
 class Registerpage extends StatefulWidget {
   const Registerpage({super.key});
@@ -12,7 +15,7 @@ class Registerpage extends StatefulWidget {
 class _RegisterpageState extends State<Registerpage> {
   var role = "";
   bool _obscureText = true;
-   TextEditingController _namecontroller = TextEditingController();
+   TextEditingController _usernamecontroller = TextEditingController();
    TextEditingController _emailController1 = TextEditingController();
    TextEditingController _passwordController2 = TextEditingController();
    TextEditingController _phonecontroller = TextEditingController();
@@ -36,19 +39,22 @@ class _RegisterpageState extends State<Registerpage> {
   }
 
   void resgisterUser() async {
+    bool isAdmin = role == "admin"?true:false;
     var regBody = {
-      "fullName": _namecontroller.text,
+      "username": _usernamecontroller.text,
+      "password":_passwordController2.text,
+      "isAdmin": isAdmin,
       "phoneNb": _phonecontroller.text
     };
 
     var response = await http.post(
-      Uri.parse('http://192.168.1.101:3000/userResgistration'),
+      Uri.parse(url+'/userResgistration'),
       headers: {"Content-type": "application/json"},
       body: jsonEncode(regBody)
     );
     print(response.body);
     setState(() {
-      _namecontroller.clear();
+      _usernamecontroller.clear();
       _phonecontroller.clear();
     });
   }
@@ -56,163 +62,191 @@ class _RegisterpageState extends State<Registerpage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(224, 255, 255, 255),
-      body: Stack(
-        children: [
-          Container(
-            margin: EdgeInsets.only(left: 135, top: 10),
-            child: Image.asset(
-              "assets/images/images-removebg-preview.png",
-              height: 180,
-              width: 180,
-            ),
-          ),
-          Center(
-            child: Container(
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Color.fromARGB(255, 141, 23, 19),
-                borderRadius: BorderRadius.circular(10),
+      backgroundColor: Colors.grey[300],
+      body:SafeArea(child: Center(
+        child: Container(decoration: BoxDecoration(
+          image: DecorationImage(repeat: ImageRepeat.noRepeat,
+          opacity: 0.1,
+          scale: 0.1,
+          image:AssetImage("assets/images/abstract-cedar-tree-icon-vector-35451494.jpg")),
+        ),
+          child: Column(
+            children: [
+              SizedBox(height: 30),
+              //logo
+              Image.asset(
+                  "assets/images/images-removebg-preview.png",
+                  height: 180,
+                  width: 200,
+                ),
+          
+              //welcome Back
+              Text(
+                'Welcome Habibi',
+                style: TextStyle(
+                  color: Colors.grey[700],
+                  fontSize: 20
+                ),
               ),
-              width: 300,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+              SizedBox(height: 30),
+              //start
+              Container(margin: const EdgeInsets.symmetric(horizontal: 50),
+              height: 70,
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(8)
+              ),
+                child:  Row(mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            role = "user";
-                          });
+                      GestureDetector(child: Container(
+                         //padding: EdgeInsets.only(top: 5,left: 100,bottom: 5),
+                         height: 40,
+                         width: 100,
+                        decoration: BoxDecoration(
+                          color: 
+                          role == "user"? Colors.grey[600]:Colors.grey[400],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Center(
+                          child: Text("User",style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[900],
+                            fontWeight: FontWeight.bold,
+                          ),),
+                        ),
+                      )
+                       ,
+                      onTap: () {
+                        setState(() {
+                          role = "user";
+                        });
+                      },),
+                      
+                      SizedBox(width: 30),
+                      GestureDetector(child: FittedBox(fit: BoxFit.fitHeight,child: Container(
+                         //padding: EdgeInsets.only(top: 5,left: 10,right: 10,bottom: 5),
+                         height:40,
+                         width: 100,
+                        decoration: BoxDecoration(
+                          color:
+                          role == "admin"? Colors.grey[600]:Colors.grey[400],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Center(
+                          child: Text("Admin",style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[900],
+                            fontWeight: FontWeight.bold
+                          ),),
+                        ),
+                      ) )
+                      // Container(
+                      //    //padding: EdgeInsets.only(top: 5,left: 10,right: 10,bottom: 5),
+                      //    height:20,
+                      //    width: 100,
+                      //   decoration: BoxDecoration(
+                      //     color:
+                      //     role == "admin"? Colors.grey[600]:Colors.grey[500],
+                      //     borderRadius: BorderRadius.circular(20),
                           
-                        },
-                        child: Text("User"),
-                      ),
-                      SizedBox(width: 40),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            role = "admin";
-                          });
-                        },
-                        child: Text("Admin"),
-                      ),
+                      //   ),
+                      //   child: Center(
+                      //     child: Text("Admin",style: TextStyle(
+                      //       fontSize: 16,
+                      //       color: Colors.grey[900],
+                      //       fontWeight: FontWeight.bold
+                      //     ),),
+                      //   ),
+                      // )
+                       ,
+                      onTap: () {
+                        setState(() {
+                          role = "admin";
+                        });
+                      },)
                     ],
                   ),
-                  if(role == "admin")...{
-                  SizedBox(height: 20),
-                  TextField(
-                    controller: _namecontroller,
-                    decoration: InputDecoration(
-                      hintText: ' Full Name',
-                      hintStyle: TextStyle(
-                        color: const Color.fromARGB(137, 73, 70, 70),
-                      ),
-                      border: OutlineInputBorder(),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 15),
-                  TextField(
-                    controller: _emailController1,
-                    decoration: InputDecoration(
-                      hintText: 'Email',
-                      hintStyle: TextStyle(
-                        color: const Color.fromARGB(137, 73, 70, 70),
-                      ),
-                      border: OutlineInputBorder(),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  TextField(
-                    controller: _passwordController2,
-                    obscureText: _obscureText,
-                    decoration: InputDecoration(
-                      hintText: 'Password',
-                      hintStyle: TextStyle(
-                        color: const Color.fromARGB(137, 73, 70, 70),
-                      ),
-                      border: OutlineInputBorder(),
-                      filled: true,
-                      fillColor: Colors.white,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureText
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                          color: Colors.grey,
-                        ),
-                        onPressed: _togglePasswordVisibility,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 15),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Registration logic here
-                    },
-                    child: GestureDetector(
-                      onTap: () => {switchTabs()},
-                      child: Text('Sign up'),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Color.fromARGB(255, 141, 23, 19),
-                      backgroundColor: Colors.white,
-                    ),
-                  ),
-                  }
                 
-                else if(role == "user")...{
-                  SizedBox(height: 20),
-                  TextField(
-                    controller: _namecontroller,
-                    decoration: InputDecoration(
-                      hintText: ' Full Name',
-                      hintStyle: TextStyle(
-                        color: const Color.fromARGB(137, 73, 70, 70),
-                      ),
-                      border: OutlineInputBorder(),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 15),
-                  TextField(
-                    controller: _phonecontroller,
-                    decoration: InputDecoration(
-                      hintText: 'Phone Number',
-                      hintStyle: TextStyle(
-                        color: const Color.fromARGB(137, 73, 70, 70),
-                      ),
-                      border: OutlineInputBorder(),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 15),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Registration logic here
-                      resgisterUser();
-                    },
-                      child: Text('Signup'),
-                    
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Color.fromARGB(255, 141, 23, 19),
-                      backgroundColor: Colors.white,
-                    ),
-                  ),
-                }],
               ),
-            ),
+              SizedBox(height: 20),
+              //username textField
+              if(role == "admin")...{
+                Mytextfield(controller: _usernamecontroller,
+                            hintText: "Username",
+                            obscureText: false),
+              SizedBox(height: 10),
+              //password textfield
+              Mytextfield(
+                controller: _passwordController2,
+                            hintText: "Password",
+                            obscureText: true
+              ),
+              SizedBox(height: 20),
+          
+              SizedBox(height: 20),
+              //signin button
+          
+              MyButton(onTap: () {resgisterUser();},buttonText: "Sign Up",),
+              
+              },
+              if(role == "user")...{
+                Mytextfield(controller: _usernamecontroller,
+                            hintText: "Username",
+                            obscureText: false),
+              SizedBox(height: 10),
+              //password textfield
+              Mytextfield(
+                controller: _passwordController2,
+                            hintText: "Password",
+                            obscureText: true
+              ),
+              SizedBox(height: 10),
+              Mytextfield(
+                controller: _phonecontroller,
+                            hintText: "Phone Number",
+                            obscureText: false
+              ),
+          
+              SizedBox(height: 20),
+              //signin button
+          
+              MyButton(onTap: () {resgisterUser();},buttonText: "Sign Up",),
+              
+              },
+              SizedBox(height: 30),
+              
+              //not A member?
+              //end
+              Row(
+                children: [
+                  Expanded(
+                    child: Divider(
+                      thickness: 1,
+                      color: Colors.grey[400],
+                    ),
+                  ),
+                  Text(
+                    'Already a User?',
+                    style: TextStyle(color: Colors.grey[700],
+                    fontSize: 16),
+            
+                  ),
+          
+                  Expanded(
+                    child: Divider(
+                      thickness: 1,
+                      color: Colors.grey[400],
+                    ),
+                  )
+                ],
+              ),SizedBox(height: 50),
+          
+              MyButton(onTap: () {Navigator.pushNamed(context, '/login');},buttonText: "Login",),
+            ],
           ),
-        ],
-      ),
+        ),
+      )
+      ) 
     );
   }
 }

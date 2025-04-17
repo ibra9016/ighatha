@@ -2,8 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:frontend/config.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class myImage extends StatefulWidget {
   
@@ -14,6 +17,8 @@ class myImage extends StatefulWidget {
 }
 
 class _myImageState extends State<myImage> {
+  late SharedPreferences prefs;
+  late String text = "";
   File? _imageFile;
   final ImagePicker _picker = ImagePicker();
   String base64 = "";
@@ -40,14 +45,30 @@ class _myImageState extends State<myImage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    initPrefs();
+  }
+  void initPrefs() async{ 
+   prefs = await SharedPreferences.getInstance();
+  }
+
+  void removeToken(){
+    prefs.remove("token");
+  }
+
+  
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            base64 == "" ? Container():Image.memory(base64Decode(base64),height: 150,width: 150),
-            ElevatedButton(onPressed:() {_converImageBase64();}, child: Text("take a pic"))
+            base64 == "" ? Container(child: Text(text),):Image.memory(base64Decode(base64),height: 150,width: 150),
+            ElevatedButton(onPressed:() {removeToken();
+              //_converImageBase64();
+              }, 
+            child: Text("remove token"))
           ],
         ),
       ),
