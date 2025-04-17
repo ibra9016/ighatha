@@ -104,7 +104,7 @@ class _RegisterpageState extends State<Registerpage> {
                          width: 100,
                         decoration: BoxDecoration(
                           color: 
-                          role == "user"? Colors.grey[600]:Colors.grey[400],
+                          role == "user"? Colors.grey[500]:Colors.grey[400],
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Center(
@@ -129,7 +129,7 @@ class _RegisterpageState extends State<Registerpage> {
                          width: 100,
                         decoration: BoxDecoration(
                           color:
-                          role == "admin"? Colors.grey[600]:Colors.grey[400],
+                          role == "admin"? Colors.grey[500]:Colors.grey[400],
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Center(
