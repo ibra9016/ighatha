@@ -3,13 +3,38 @@ const postService = require("../services/post.service");
 
 exports.register = async(req,res,next)=>{
     try{
-        const {postedBy,description,location,image,isAssigned,center} = req.body;
-        
-        const sucess = await postService.registerPost(postedBy,description,location,image,isAssigned,center);
+        if(!req.file) return res.status(400).json({ error: 'No file uploaded' });
+        const { filename, path } = req.file;
+        const {postedBy,description,location,isAssigned} = req.body;
 
-        res.json({status:true,success:"post registered successfully"})
+  // Make the file path relative
+  const relativePath = path.replace(/^.*?uploads/, '/uploads');
+    // Save the photo metadata (filename and filepath)
+    const savedPhoto = await postService.registerPost(postedBy,
+                                                      description,
+                                                      location,                                                      
+                                                      filename,
+                                                      relativePath,
+                                                      isAssigned);
+
+    res.status(200).json({ message: 'Post uploaded', body: savedPhoto });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to save photo metadata' });
+  
+}
+};
+
+exports.getPics = async(req,res)=>{
+  try{
+    const allPics = await postService.getPics();
+    if(allPics == null) return res.status(400).json({message:"no images found"});
+    for(i = 0;i<allPics;i++){
+      
     }
-    catch(err){
-        throw err;
-    }
+    res.status(200).json({ message: 'true', file: allPics });
+  }
+  catch(err){
+    throw err
+  }
 };

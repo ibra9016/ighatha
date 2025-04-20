@@ -39,11 +39,10 @@ class _LoginpageState extends State<Loginpage> {
       var token = jsonResponse['token'];
       prefs.setString("token", token);
       Map<String,dynamic> jwtDecodedToken = JwtDecoder.decode(token);
-      var username = jwtDecodedToken['username'];
       var isAdmin = jwtDecodedToken['isAdmin'];
-      
-        isAdmin == true?Navigator.pushNamed(context, '/adminPage'):
-                        Navigator.pushNamed(context, '/userPage');
+      prefs.setString('userId', jwtDecodedToken['_id']);  
+        isAdmin == true?Navigator.pushNamed(context, '/adminFeed'):
+                        Navigator.pushNamed(context, '/userFeed');
     
     }
     else{
@@ -65,7 +64,6 @@ class _LoginpageState extends State<Loginpage> {
   }
   @override
   Widget build(BuildContext context) {
-    bool isObsecure = true;
     return Scaffold(
       backgroundColor: Colors.grey[300],
       body:SafeArea(child: Container(

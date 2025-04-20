@@ -137,28 +137,11 @@ class _RegisterpageState extends State<Registerpage> {
                             fontSize: 16,
                             color: Colors.grey[900],
                             fontWeight: FontWeight.bold
-                          ),),
+                          ),
+                          ),
                         ),
-                      ) )
-                      // Container(
-                      //    //padding: EdgeInsets.only(top: 5,left: 10,right: 10,bottom: 5),
-                      //    height:20,
-                      //    width: 100,
-                      //   decoration: BoxDecoration(
-                      //     color:
-                      //     role == "admin"? Colors.grey[600]:Colors.grey[500],
-                      //     borderRadius: BorderRadius.circular(20),
-                          
-                      //   ),
-                      //   child: Center(
-                      //     child: Text("Admin",style: TextStyle(
-                      //       fontSize: 16,
-                      //       color: Colors.grey[900],
-                      //       fontWeight: FontWeight.bold
-                      //     ),),
-                      //   ),
-                      // )
-                       ,
+                      ) 
+                      ),
                       onTap: () {
                         setState(() {
                           role = "admin";

@@ -11,5 +11,6 @@ app.use('/',userRoute);
 app.use('/',vehiculeRoute);
 app.use('/',centerRoute);
 app.use('/',postRoute);
+app.use('/uploads', express.static('uploads'));
 
 module.exports = app;

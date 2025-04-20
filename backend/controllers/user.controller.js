@@ -49,7 +49,7 @@ exports.loginUser = async(req,res,next)=>{
         }
 
         let tokenData = {_id:user._id , username:user.username,isAdmin:user.isAdmin};
-        const token = await userService.generateToken(tokenData,'secretkey','1h');
+        const token = await userService.generateToken(tokenData,'secretkey');
         res.status(200).json({status:true,token:token})
     }   
     catch(err){

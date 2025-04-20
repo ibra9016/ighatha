@@ -50,8 +50,8 @@ class userService{
                 return result
     }
 
-    static async generateToken(tokenData,secretkey,jwt_expire){
-        return jwt.sign(tokenData,secretkey,{expiresIn:jwt_expire});
+    static async generateToken(tokenData,secretkey){
+        return jwt.sign(tokenData,secretkey);
     }
 }
 

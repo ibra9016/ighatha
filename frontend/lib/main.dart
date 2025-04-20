@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/adminFeed.dart';
+import 'package:frontend/components/post_screen.dart';
+import 'package:frontend/userFeed.dart';
 import 'package:frontend/loginPage.dart';
 import 'package:frontend/registerPage.dart';
-import 'package:frontend/imageTest.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:frontend/adminPage.dart';
-import 'package:frontend/userPage.dart';
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   SharedPreferences prefs = await SharedPreferences.getInstance();
+  print(prefs.getString('userId'));
   runApp(MyApp(token: prefs.getString('token'),));
 }
 
@@ -32,19 +33,18 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       routes: {
         '/login':(context)=>Loginpage(),
-        '/adminPage':(context)=>Adminpage(),
-        '/userPage':(context)=>Userpage(),
-        '/register':(context)=>Registerpage()
+        '/register':(context)=>Registerpage(),
+        '/userFeed':(context)=>Userfeed(),
+        '/adminFeed':(context)=>AdminFeed()
       },
       debugShowCheckedModeBanner: false,
-        home:(Registerpage()
+        home:(
           
-        //   token == null? Loginpage():
-        // JwtDecoder.isExpired(token) == false? 
-        // isAdmin == true?
-        // Adminpage():Userpage()
-        // :
-        // Loginpage())
+          token != null? 
+                  isAdmin == true? AdminFeed():
+                                  Userfeed():
+          Loginpage()
+  
   )
   );
   }
