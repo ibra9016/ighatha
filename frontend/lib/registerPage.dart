@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:frontend/config.dart';
 import 'package:http/http.dart' as http;
+import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'components/myTextField.dart';
 import 'components/my_button.dart';
 
@@ -14,11 +16,10 @@ class Registerpage extends StatefulWidget {
 
 class _RegisterpageState extends State<Registerpage> {
   var role = "";
-  bool _obscureText = true;
-   TextEditingController _usernamecontroller = TextEditingController();
-   TextEditingController _emailController1 = TextEditingController();
-   TextEditingController _passwordController2 = TextEditingController();
-   TextEditingController _phonecontroller = TextEditingController();
+    bool _obscureText = true;
+    late SharedPreferences prefs;
+    TextEditingController _usernamecontroller = TextEditingController();
+    TextEditingController _passwordController2 = TextEditingController();
   // ignore: unused_element
   void _togglePasswordVisibility() {
     setState(() {
@@ -39,12 +40,12 @@ class _RegisterpageState extends State<Registerpage> {
   }
 
   void resgisterUser() async {
-    bool isAdmin = role == "admin"?true:false;
+    if(_usernamecontroller.text.isEmpty && _passwordController2.text.isEmpty) return ;
+    bool isAdmin = false;
     var regBody = {
       "username": _usernamecontroller.text,
       "password":_passwordController2.text,
       "isAdmin": isAdmin,
-      "phoneNb": _phonecontroller.text
     };
 
     var response = await http.post(
@@ -52,11 +53,30 @@ class _RegisterpageState extends State<Registerpage> {
       headers: {"Content-type": "application/json"},
       body: jsonEncode(regBody)
     );
-    print(response.body);
+    if(response.statusCode == 200){
+      var jsonResponse = jsonDecode(response.body);
+      var token = jsonResponse['token'];
+      prefs.setString("token", token);
+      Map<String,dynamic> jwtDecodedToken = JwtDecoder.decode(token);
+      var isAdmin = jwtDecodedToken['isAdmin'];
+      prefs.setString('userId', jwtDecodedToken['_id']);
+      print(prefs.getString('userId')!);  
+        isAdmin == true?Navigator.pushNamed(context, '/adminFeed'):
+                        Navigator.pushNamed(context, '/userFeed');
+    }
     setState(() {
       _usernamecontroller.clear();
-      _phonecontroller.clear();
+      _passwordController2.clear();
     });
+  }
+  @override
+  void initState() {
+    super.initState();
+    initSharedPref();
+  }
+
+  void initSharedPref() async{
+    prefs = await SharedPreferences.getInstance();
   }
 
   @override
@@ -166,7 +186,6 @@ class _RegisterpageState extends State<Registerpage> {
               ),
               SizedBox(height: 20),
           
-              SizedBox(height: 20),
               //signin button
           
               MyButton(onTap: () {resgisterUser();},buttonText: "Sign Up",),
@@ -182,15 +201,8 @@ class _RegisterpageState extends State<Registerpage> {
                 controller: _passwordController2,
                             hintText: "Password",
                             obscureText: true
-              ),
-              SizedBox(height: 10),
-              Mytextfield(
-                controller: _phonecontroller,
-                            hintText: "Phone Number",
-                            obscureText: false
-              ),
-          
-              SizedBox(height: 20),
+              ),   
+                    SizedBox(height: 20),
               //signin button
           
               MyButton(onTap: () {resgisterUser();},buttonText: "Sign Up",),

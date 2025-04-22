@@ -28,12 +28,17 @@ class _AdminFeedState extends State<AdminFeed> {
       setState(() {
         _imageFile = File(image.path);
       });
-      Navigator.push(
+      final shouldrefresh = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => PostScreen(image: _imageFile!),
         ),
       );
+      if (shouldrefresh == true) {
+        setState(() {
+          _imageData = fetchImageUrls();
+        });
+      }
     }
   }
 
@@ -48,11 +53,13 @@ class _AdminFeedState extends State<AdminFeed> {
           'imageUrl': url + item['image']['filepath'],
           'description': item['description'] ?? 'No description available',
           'userName': item['postedBy']['username'] ?? 'Unknown User',
-          '_id': item['_id'] ?? 'no id'
+          '_id': item['_id'] ?? 'no id',
+          'isAssigned': item['isAssigned'].toString(),
+          'location': item['location'] ?? '',
         };
       }).toList().reversed.toList();
     } else {
-      throw Exception('Failed to load images');
+      throw Exception('Failed to load post');
     }
   }
 
@@ -69,35 +76,38 @@ class _AdminFeedState extends State<AdminFeed> {
 
   void logout() async {
     await prefs.clear();
-    Navigator.pushReplacementNamed(context, '/login');
+    Navigator.pushNamed(context, '/login');
+  }
+
+  void handleStatusAssign(String postId) async {
+    // Your assignment logic here
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[300],
-      appBar: AppBar(toolbarHeight: 60,
-              automaticallyImplyLeading: false,
-              title: Text(
-                "Latest",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              backgroundColor: Colors.blueAccent, // solid blue color
-              actions: [
-                IconButton(
-                  icon: Icon(Icons.logout, color: Colors.white),
-                  onPressed: logout,
-                ),
-              ],
-              elevation: 4,
-            ),
-
-      
+      appBar: AppBar(
+        toolbarHeight: 60,
+        automaticallyImplyLeading: false,
+        title: Text(
+          "Latest",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            letterSpacing: 1.2,
+          ),
+        ),
+        backgroundColor: Colors.blueAccent,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout, color: Colors.white),
+            onPressed: logout,
+          ),
+        ],
+        elevation: 4,
+      ),
       body: FutureBuilder<List<Map<String, String>>>(
         future: _imageData,
         builder: (context, snapshot) {
@@ -109,140 +119,181 @@ class _AdminFeedState extends State<AdminFeed> {
 
           final posts = snapshot.data!;
           if (posts.isEmpty)
-            return Center(child: Text('No images found'));
+            return Center(child: Text('No Posts found'));
 
-          return ListView.builder(
-            itemCount: posts.length,
-            itemBuilder: (context, index) {
-              String imageUrl = posts[index]['imageUrl']!;
-              String description = posts[index]['description']!;
-              String userName = posts[index]['userName']!;
-              String postId = posts[index]['_id']!;
-
-              return GestureDetector(
-                key: ValueKey(postId),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PostDetailPage(
-                        imageUrl: imageUrl,
-                        description: description,
-                      ),
-                    ),
-                  );
-                },
-                child: Card(
-                  margin: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 6,
-                  color: Colors.grey[400],
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // User info
-                      Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: Colors.blueAccent,
-                              child: Text(
-                                userName.isNotEmpty ? userName[0] : '?',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              userName,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black.withOpacity(0.8),
-                              ),
-                            ),
-                          ],
+          return RefreshIndicator(
+            onRefresh: () async {
+              setState(() {
+                _imageData = fetchImageUrls();
+              });
+            },
+            child: ListView.builder(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                final post = posts[index];
+                return GestureDetector(
+                  key: ValueKey(post['_id']),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PostDetailPage(
+                          imageUrl: post['imageUrl']!,
+                          description: post['description']!,
                         ),
                       ),
+                    );
+                  },
+                  child: Card(
+                    margin: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 6,
+                    color: Colors.grey[100],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header Row: Avatar, Username, Status
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: Colors.blueAccent,
+                                      child: Text(
+                                        post['userName']!.isNotEmpty
+                                            ? post['userName']![0]
+                                            : '?',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                    ),
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            post['userName']!,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black87,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          if (post['location']!.isNotEmpty)
+                                            Text(
+                                              post['location']!,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.grey[700],
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  if (post['isAssigned'] == 'false') {
+                                    handleStatusAssign(post['_id']!);
+                                  }
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: post['isAssigned'] == 'true'
+                                        ? Colors.green
+                                        : Colors.red,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    post['isAssigned'] == 'true'
+                                        ? 'Assigned'
+                                        : 'Not Assigned',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
 
-                      // Post Image
-                      Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Container(
+                        // Post Image
+                        Container(
                           width: double.infinity,
-                          height: 400,
+                          height: 300,
                           decoration: BoxDecoration(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
                             image: DecorationImage(
-                              image: NetworkImage(imageUrl),
+                              image: NetworkImage(post['imageUrl']!),
                               fit: BoxFit.cover,
                             ),
                           ),
                         ),
-                      ),
 
-                      // Description
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          description,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey[800],
+                        // Description
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            post['description']!,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[800],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           );
         },
       ),
       bottomNavigationBar: BottomNavigationBar(
-              currentIndex: _selectedIndex,
-              type: BottomNavigationBarType.fixed, // important when more than 3 items
-              onTap: (index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
 
-                if (index == 1) {
-                  _takePic();
-                  setState(() {
-                    _selectedIndex = 0;
-                  });
-                } else if (index == 2) {
-                  Navigator.pushNamed(context, '/account');
-                } else if (index == 3) {
-                  // Add your logic for the fourth item here
-                  Navigator.pushNamed(context, '/settings'); // example route
-                }
-              },
-              items: [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.home),
-                  label: 'Home',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.add_a_photo_rounded),
-                  label: 'New Post',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.person),
-                  label: 'Account',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.group),
-                  label: 'Crew',
-                ),
-              ],
-            ),
+          if (index == 1) {
+            _takePic();
+            setState(() {
+              _selectedIndex = 0;
+            });
+          } else if (index == 2) {
+            Navigator.pushNamed(context, '/notifications');
+          } else if (index == 3) {
+            Navigator.pushNamed(context, '/account');
+          }
+        },
+        type: BottomNavigationBarType.fixed,
+        items: [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.add_a_photo), label: 'New Post'),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Alerts'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Account'),
+        ],
+      ),
     );
   }
 }

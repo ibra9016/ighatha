@@ -28,12 +28,17 @@ class _UserfeedState extends State<Userfeed> {
       setState(() {
         _imageFile = File(image.path);
       });
-      Navigator.push(
+      final shouldrefresh = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => PostScreen(image: _imageFile!),
         ),
       );
+      if (shouldrefresh == true) {
+        setState(() {
+          _imageData = fetchImageUrls();
+        });
+      }
     }
   }
 
@@ -48,11 +53,13 @@ class _UserfeedState extends State<Userfeed> {
           'imageUrl': url + item['image']['filepath'],
           'description': item['description'] ?? 'No description available',
           'userName': item['postedBy']['username'] ?? 'Unknown User',
-          '_id': item['_id'] ?? 'no id'
+          '_id': item['_id'] ?? 'no id',
+          'isAssigned': item['isAssigned'].toString(),
+          'location': item['location'] ?? 'Unknown Location',
         };
       }).toList().reversed.toList();
     } else {
-      throw Exception('Failed to load images');
+      throw Exception('Failed to load post');
     }
   }
 
@@ -76,28 +83,27 @@ class _UserfeedState extends State<Userfeed> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[300],
-      appBar: AppBar(toolbarHeight: 60,
-              automaticallyImplyLeading: false,
-              title: Text(
-                "Latest",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              backgroundColor: Colors.blueAccent, // solid blue color
-              actions: [
-                IconButton(
-                  icon: Icon(Icons.logout, color: Colors.white),
-                  onPressed: logout,
-                ),
-              ],
-              elevation: 4,
-            ),
-
-      
+      appBar: AppBar(
+        toolbarHeight: 60,
+        automaticallyImplyLeading: false,
+        title: Text(
+          "Latest",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            letterSpacing: 1.2,
+          ),
+        ),
+        backgroundColor: Colors.blueAccent, // solid blue color
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout, color: Colors.white),
+            onPressed: logout,
+          ),
+        ],
+        elevation: 4,
+      ),
       body: FutureBuilder<List<Map<String, String>>>(
         future: _imageData,
         builder: (context, snapshot) {
@@ -109,115 +115,165 @@ class _UserfeedState extends State<Userfeed> {
 
           final posts = snapshot.data!;
           if (posts.isEmpty)
-            return Center(child: Text('No images found'));
+            return Center(child: Text('No Posts found'));
 
-          return ListView.builder(
-            itemCount: posts.length,
-            itemBuilder: (context, index) {
-              String imageUrl = posts[index]['imageUrl']!;
-              String description = posts[index]['description']!;
-              String userName = posts[index]['userName']!;
-              String postId = posts[index]['_id']!;
-
-              return GestureDetector(
-                key: ValueKey(postId),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PostDetailPage(
-                        imageUrl: imageUrl,
-                        description: description,
-                      ),
-                    ),
-                  );
-                },
-                child: Card(
-                  margin: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 6,
-                  color: Colors.grey[400],
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // User info
-                      Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: Colors.blueAccent,
-                              child: Text(
-                                userName.isNotEmpty ? userName[0] : '?',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              userName,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black.withOpacity(0.8),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Post Image
-                      Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Container(
-                          width: double.infinity,
-                          height: 400,
-                          decoration: BoxDecoration(
-                            image: DecorationImage(
-                              image: NetworkImage(imageUrl),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Description
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          description,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey[800],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+          return RefreshIndicator(
+            onRefresh: () async {
+              setState(() {
+                _imageData = fetchImageUrls();
+              });
             },
+            child: ListView.builder(
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                String imageUrl = posts[index]['imageUrl']!;
+                String description = posts[index]['description']!;
+                String userName = posts[index]['userName']!;
+                String postId = posts[index]['_id']!;
+                String location = posts[index]['location']!;
+                String isAssigned = posts[index]['isAssigned']!;
+
+                return GestureDetector(
+                  key: ValueKey(postId),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PostDetailPage(
+                          imageUrl: imageUrl,
+                          description: description,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Card(
+                    margin: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 6,
+                    color: Colors.grey[400],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // User info with location
+                        Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        backgroundColor: Colors.blueAccent,
+                                        child: Text(
+                                          userName.isNotEmpty
+                                              ? userName[0]
+                                              : '?',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        userName,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color:
+                                              Colors.black.withOpacity(0.8),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 4),
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 40.0),
+                                    child: Text(
+                                      location,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: isAssigned == 'true'
+                                      ? Colors.green
+                                      : Colors.red,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  isAssigned == 'true'
+                                      ? 'Assigned'
+                                      : 'Not Assigned',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Post Image
+                        Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: Container(
+                            width: double.infinity,
+                            height: 400,
+                            decoration: BoxDecoration(
+                              image: DecorationImage(
+                                image: NetworkImage(imageUrl),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Description
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            description,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
           );
         },
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: (index){
+        onTap: (index) {
           setState(() {
             _selectedIndex = index;
           });
 
           if (index == 1) {
-            
-             _takePic();
+            _takePic();
             setState(() {
-              _selectedIndex=0;
+              _selectedIndex = 0;
             });
-            
           } else if (index == 2) {
             Navigator.pushNamed(context, '/account');
           }
@@ -235,7 +291,6 @@ class _UserfeedState extends State<Userfeed> {
             icon: Icon(Icons.person),
             label: 'Account',
           ),
-          
         ],
       ),
     );

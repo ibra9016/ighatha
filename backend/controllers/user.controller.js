@@ -2,11 +2,13 @@ const userService = require('../services/user.services');
 
 exports.register = async(req , res , next)=>{
     try{
-    const {fullName,username,email ,password,isAdmin,phoneNb} = req.body;
-
-    const success = await userService.registerUser(fullName,username,email ,password,isAdmin,phoneNb);
-
-    res.json({status:true,success:"User registered successfully"});
+    const {username,password,isAdmin} = req.body;
+        compare = await userService.checkUser(username)
+        if(compare) return res.json({status:true,message:"Username is taken"})
+        const user = await userService.registerUser(username,password,isAdmin);   
+        let tokenData = {_id: user._id , username:user.username,isAdmin: user.isAdmin}
+        const token = await userService.generateToken(tokenData,'secretkey');
+        res.status(200).json({status:true,token:token});
     }
     catch(err){
         throw err;

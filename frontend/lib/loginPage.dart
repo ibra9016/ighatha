@@ -46,7 +46,7 @@ class _LoginpageState extends State<Loginpage> {
     
     }
     else{
-      print("somethig went wrong");
+      print("something went wrong");
     }
   }
 
@@ -149,7 +149,7 @@ class _LoginpageState extends State<Loginpage> {
                 ],
               ),SizedBox(height: 50),
         
-              MyButton(onTap: () {Navigator.pushNamed(context, '/register');},buttonText: "Sign Up",),
+              MyButton(onTap: () {Navigator.pushNamed(context, '/register');},buttonText: "Sign Up"),
             ],
           ),
         ),

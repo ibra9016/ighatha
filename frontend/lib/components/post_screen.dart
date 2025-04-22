@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:frontend/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:location/location.dart' as loc;
 
 class PostScreen extends StatefulWidget {
   final File image;
@@ -15,11 +17,54 @@ class PostScreen extends StatefulWidget {
 }
 
 class _PostScreenState extends State<PostScreen> {
+    String finalLocation="";
   final TextEditingController _textController = TextEditingController();
   late SharedPreferences prefs;
+
+  Future<void> _getLocation() async{
+    loc.Location location = loc.Location();
+  loc.LocationData? currentLocation;
+
+  try {
+    //Check if location service is enabled
+    bool serviceEnabled = await location.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await location.requestService();
+      if (!serviceEnabled) {
+        print('Location services are disabled');
+        return;
+      }
+    }
+
+    // Check if permission is granted
+    loc.PermissionStatus permissionGranted = await location.hasPermission();
+    if (permissionGranted == loc.PermissionStatus.denied) {
+      permissionGranted = await location.requestPermission();
+      if (permissionGranted != loc.PermissionStatus.granted) {
+        print('Location permission denied');
+        return;
+      }
+    }
+
+    // Fetch current location
+    currentLocation = await location.getLocation();
+    print(currentLocation);
+    List<Placemark> placemarks = await placemarkFromCoordinates(
+      currentLocation.latitude!,currentLocation.longitude!);
+
+  // Get the first placemark (if available)
+  Placemark place = placemarks[0];
+    finalLocation = "${place.locality},${place.administrativeArea}}";
+  } catch (e) {
+    print('Error fetching location: $e');
+    return;
+  }
+  }
   
 
   Future<void> _post() async{
+     await _getLocation();
+     if(finalLocation == "") return;
     final File _imageFile = widget.image;
     var request = http.MultipartRequest("POST", Uri.parse(url+'/postRegistration'));
     request.files.add(
@@ -28,9 +73,10 @@ class _PostScreenState extends State<PostScreen> {
         _imageFile!.path,
       ),
     );
+    
     request.fields['description'] = _textController.text;
     request.fields['postedBy'] = prefs.getString('userId')!;
-    request.fields['location'] = "random";
+    request.fields['location'] = finalLocation;
     request.fields['isAssigned'] = "false";
     final response = await request.send();
 
@@ -38,7 +84,7 @@ class _PostScreenState extends State<PostScreen> {
       final responseBody = await response.stream.bytesToString();
       final data = json.decode(responseBody);
       print('Upload successful: $data');
-      Navigator.pushNamed(context, '/feed');
+      Navigator.pop(context,true);
     } 
     else {
       print('Upload failed: ${response.statusCode}');
