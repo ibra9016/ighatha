@@ -24,6 +24,11 @@ const vehiculeSchema = new Schema({
     isOccupied:{
         type:Boolean,
         required:true
+    },
+    center:{
+        type: mongoose.Schema.Types.ObjectId,
+                ref: "centers",
+                required: true
     }
 });
 

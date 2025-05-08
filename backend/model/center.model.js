@@ -5,17 +5,13 @@ const {Schema} = mongoose;
 
 const centerSchema = new Schema({
     adress:{
-        city:{
+        longtitude: {
             type:String,
-            required:true
+            required: true
         },
-        roadName:{
+        latitude:{
             type:String,
-            required:true
-        },
-        BuildingNb:{
-            type:String,
-            required:true
+            required: true
         }
     },
     centerType:{

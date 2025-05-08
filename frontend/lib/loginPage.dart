@@ -40,9 +40,13 @@ class _LoginpageState extends State<Loginpage> {
       prefs.setString("token", token);
       Map<String,dynamic> jwtDecodedToken = JwtDecoder.decode(token);
       var isAdmin = jwtDecodedToken['isAdmin'];
-      prefs.setString('userId', jwtDecodedToken['_id']);  
-        isAdmin == true?Navigator.pushNamed(context, '/adminFeed'):
-                        Navigator.pushNamed(context, '/userFeed');
+      prefs.setString('userId', jwtDecodedToken['_id']);
+      prefs.setString("centerId", jwtDecodedToken['center']);
+        isAdmin == true? 
+                prefs.getString("centerId")==""? 
+                        Navigator.pushNamed(context, '/adminSetup'):
+                        Navigator.pushNamed(context, '/adminFeed'):
+          Navigator.pushNamed(context, '/userFeed');
     
     }
     else{
@@ -54,6 +58,7 @@ class _LoginpageState extends State<Loginpage> {
     super.initState();
     initSharedPref();
   }
+
 
   void initSharedPref() async{
     prefs = await SharedPreferences.getInstance();

@@ -60,9 +60,7 @@ class _RegisterpageState extends State<Registerpage> {
       Map<String,dynamic> jwtDecodedToken = JwtDecoder.decode(token);
       var isAdmin = jwtDecodedToken['isAdmin'];
       prefs.setString('userId', jwtDecodedToken['_id']);
-      print(prefs.getString('userId')!);  
-        isAdmin == true?Navigator.pushNamed(context, '/adminFeed'):
-                        Navigator.pushNamed(context, '/userFeed');
+      Navigator.pushNamed(context, '/userFeed');
     }
     setState(() {
       _usernamecontroller.clear();
@@ -74,6 +72,38 @@ class _RegisterpageState extends State<Registerpage> {
     super.initState();
     initSharedPref();
   }
+
+  void registerAdmin() async {
+  if (_usernamecontroller.text.isEmpty && _passwordController2.text.isEmpty) return;
+  bool isAdmin = true;
+  var regBody = {
+    "username": _usernamecontroller.text,
+    "password": _passwordController2.text,
+    "isAdmin": isAdmin,
+  };
+
+  var response = await http.post(
+    Uri.parse(url + '/userResgistration'),
+    headers: {"Content-type": "application/json"},
+    body: jsonEncode(regBody),
+  );
+
+  if (response.statusCode == 200) {
+    var jsonResponse = jsonDecode(response.body);
+    var token = jsonResponse['token'];
+    prefs.setString("token", token);
+    Map<String, dynamic> jwtDecodedToken = JwtDecoder.decode(token);
+    prefs.setString('userId', jwtDecodedToken['_id']);
+
+    // ✅ navigate to Admin Setup page
+    Navigator.pushNamed(context, '/adminSetup');
+  }
+
+  setState(() {
+    _usernamecontroller.clear();
+    _passwordController2.clear();
+  });
+}
 
   void initSharedPref() async{
     prefs = await SharedPreferences.getInstance();
@@ -188,7 +218,7 @@ class _RegisterpageState extends State<Registerpage> {
           
               //signin button
           
-              MyButton(onTap: () {resgisterUser();},buttonText: "Sign Up",),
+              MyButton(onTap: () {registerAdmin();},buttonText: "Sign Up",),
               
               },
               if(role == "user")...{

@@ -80,7 +80,120 @@ class _AdminFeedState extends State<AdminFeed> {
   }
 
   void handleStatusAssign(String postId) async {
-    // Your assignment logic here
+     String? centerId = prefs.getString("centerId");
+
+  // Fetch crew members from API
+  final response = await http.post(
+    Uri.parse(url + '/fetchCrew'),
+    headers: {"Content-type": "application/json"},
+    body: jsonEncode({"adminId": centerId}),
+  );
+
+  if (response.statusCode != 200) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to fetch crew members')),
+    );
+    return;
+  }
+
+  final jsonres = jsonDecode(response.body);
+  //print(jsonres);
+  String? selectedCrew;
+  String? selectedVehicle;
+
+  // ✅ Populate crewMembers list from response
+     List<dynamic> crewList = jsonres['body'];
+
+  List<Map<String, String>> crewMembers = crewList.map<Map<String, String>>((item) {
+    return {
+      'id': item['_id']?.toString() ?? '',
+      'fullName': item['fullName']?.toString() ?? '',
+    };
+  }).toList();
+
+  // Example vehicle list (can fetch from API too if needed)
+  List<String> vehicles = ['Vehicle 1', 'Vehicle 2', 'Vehicle 3'];
+
+  await showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text('Assign Task'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<String>(
+              value: selectedCrew,
+              hint: Text('Select Crew Member'),
+              items: crewMembers.map((crew) {
+                return DropdownMenuItem(
+                  value: crew['id'],
+                  child: Text(crew['fullName'] ?? ''),
+                );
+              }).toList(),
+              onChanged: (value) {
+                selectedCrew = value;
+              },
+            ),
+            SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: selectedVehicle,
+              hint: Text('Select Vehicle'),
+              items: vehicles.map((vehicle) {
+                return DropdownMenuItem(
+                  value: vehicle,
+                  child: Text(vehicle),
+                );
+              }).toList(),
+              onChanged: (value) {
+                selectedVehicle = value;
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (selectedCrew != null && selectedVehicle != null) {
+                final assignResponse = await http.post(
+                  Uri.parse(url + '/assignTask'),
+                  headers: {'Content-Type': 'application/json'},
+                  body: jsonEncode({
+                    'postId': postId,
+                    'crewMemberId': selectedCrew, // Send ID
+                    'vehicle': selectedVehicle,
+                  }),
+                );
+
+                if (assignResponse.statusCode == 200) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Task assigned successfully!')),
+                  );
+                  setState(() {
+                    _imageData = fetchImageUrls(); // Refresh posts
+                  });
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to assign task')),
+                  );
+                }
+                Navigator.of(context).pop();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Please select both crew and vehicle')),
+                );
+              }
+            },
+            child: Text('Assign'),
+          ),
+        ],
+      );
+    },
+  );
   }
 
   @override
@@ -155,7 +268,6 @@ class _AdminFeedState extends State<AdminFeed> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header Row: Avatar, Username, Status
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           child: Row(
@@ -231,8 +343,6 @@ class _AdminFeedState extends State<AdminFeed> {
                             ],
                           ),
                         ),
-
-                        // Post Image
                         Container(
                           width: double.infinity,
                           height: 300,
@@ -244,8 +354,6 @@ class _AdminFeedState extends State<AdminFeed> {
                             ),
                           ),
                         ),
-
-                        // Description
                         Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Text(

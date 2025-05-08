@@ -48,7 +48,6 @@ class _PostScreenState extends State<PostScreen> {
 
     // Fetch current location
     currentLocation = await location.getLocation();
-    print(currentLocation);
     List<Placemark> placemarks = await placemarkFromCoordinates(
       currentLocation.latitude!,currentLocation.longitude!);
 

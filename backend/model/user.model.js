@@ -14,18 +14,17 @@ const userSchema = new Schema({
         required:true,
         unique:true
     },
-    email: {
-        type:String,
-    },
     password: {
         type:String,
     },
     isAdmin:{
         type:Boolean,
     },
-    phoneNb:{
-        type:Number,
-    }
+   center:{
+           type: mongoose.Schema.Types.ObjectId,
+                   ref: "centers",
+                   required: true
+       }
 });
 
 userSchema.pre('save',async function() {

@@ -1,9 +1,9 @@
 const vehiculeModel = require('../model/vehicule.model');
 
 class vehiculeService{
-    static async registerVehicule(plateNb,model,company,year,isOccupied){
+    static async registerVehicule(arrayVehicules){
         try{
-            const createVehicule = new vehiculeModel({plateNb,model,company,year,isOccupied});
+            const createVehicule = vehiculeModel.insertMany(arrayVehicules);
             return await createVehicule.save();
         }
         catch(err){

@@ -5,8 +5,8 @@ exports.register = async(req , res , next)=>{
     const {username,password,isAdmin} = req.body;
         compare = await userService.checkUser(username)
         if(compare) return res.json({status:true,message:"Username is taken"})
-        const user = await userService.registerUser(username,password,isAdmin);   
-        let tokenData = {_id: user._id , username:user.username,isAdmin: user.isAdmin}
+        const user = await userService.registerUser(username,password,isAdmin);    
+        let tokenData = {_id: user._id , username:user.username,isAdmin: user.isAdmin,center: ""}
         const token = await userService.generateToken(tokenData,'secretkey');
         res.status(200).json({status:true,token:token});
     }
@@ -49,8 +49,9 @@ exports.loginUser = async(req,res,next)=>{
         if(isMatch === false){
             throw new Error("wrong password");
         }
-
-        let tokenData = {_id:user._id , username:user.username,isAdmin:user.isAdmin};
+        let center = user.center;
+        if(center == null) center = "";
+        let tokenData = {_id:user._id , username:user.username,isAdmin:user.isAdmin,center:center};
         const token = await userService.generateToken(tokenData,'secretkey');
         res.status(200).json({status:true,token:token})
     }   
