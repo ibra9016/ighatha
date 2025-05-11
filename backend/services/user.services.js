@@ -53,6 +53,10 @@ class userService{
     static async generateToken(tokenData,secretkey){
         return jwt.sign(tokenData,secretkey);
     }
+
+    static async addCenter(userid,centerId){
+        return userModel.updateOne({_id:userid}, {$set:{center:centerId}});
+    }
 }
 
 module.exports = userService;

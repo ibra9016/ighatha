@@ -35,13 +35,15 @@ class _LoginpageState extends State<Loginpage> {
       body: jsonEncode(regBody)
     );
     var jsonResponse = jsonDecode(response.body);
-    if(jsonResponse['status']){
+    if(jsonResponse['status'] == true){
+      print("working");
       var token = jsonResponse['token'];
       prefs.setString("token", token);
       Map<String,dynamic> jwtDecodedToken = JwtDecoder.decode(token);
       var isAdmin = jwtDecodedToken['isAdmin'];
       prefs.setString('userId', jwtDecodedToken['_id']);
       prefs.setString("centerId", jwtDecodedToken['center']);
+      prefs.setString("username",jwtDecodedToken['username']);
         isAdmin == true? 
                 prefs.getString("centerId")==""? 
                         Navigator.pushNamed(context, '/adminSetup'):

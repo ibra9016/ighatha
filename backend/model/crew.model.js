@@ -13,6 +13,10 @@ const crewSchema = new Schema({
         type:String,
         required:true
        },
+       isBusy:{
+        type:Boolean,
+        required:true
+       },
        center:{
         type: mongoose.Schema.Types.ObjectId,
         ref: "centers",

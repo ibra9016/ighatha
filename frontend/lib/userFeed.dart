@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:frontend/components/post_screen.dart';
+import 'package:frontend/components/userNavBar.dart';
 import 'package:frontend/config.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
@@ -96,12 +97,6 @@ class _UserfeedState extends State<Userfeed> {
           ),
         ),
         backgroundColor: Colors.blueAccent, // solid blue color
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout, color: Colors.white),
-            onPressed: logout,
-          ),
-        ],
         elevation: 4,
       ),
       body: FutureBuilder<List<Map<String, String>>>(
@@ -124,130 +119,121 @@ class _UserfeedState extends State<Userfeed> {
               });
             },
             child: ListView.builder(
+              padding: EdgeInsets.symmetric(vertical: 12),
               itemCount: posts.length,
               itemBuilder: (context, index) {
-                String imageUrl = posts[index]['imageUrl']!;
-                String description = posts[index]['description']!;
-                String userName = posts[index]['userName']!;
-                String postId = posts[index]['_id']!;
-                String location = posts[index]['location']!;
-                String isAssigned = posts[index]['isAssigned']!;
-
+                final post = posts[index];
                 return GestureDetector(
-                  key: ValueKey(postId),
+                  key: ValueKey(post['_id']),
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => PostDetailPage(
-                          imageUrl: imageUrl,
-                          description: description,
+                          imageUrl: post['imageUrl']!,
+                          description: post['description']!,
                         ),
                       ),
                     );
                   },
                   child: Card(
-                    margin: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    margin: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 6,
-                    color: Colors.grey[400],
+                    color: Colors.grey[100],
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // User info with location
                         Padding(
-                          padding: const EdgeInsets.all(12.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      CircleAvatar(
-                                        backgroundColor: Colors.blueAccent,
-                                        child: Text(
-                                          userName.isNotEmpty
-                                              ? userName[0]
-                                              : '?',
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                      ),
-                                      SizedBox(width: 10),
-                                      Text(
-                                        userName,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color:
-                                              Colors.black.withOpacity(0.8),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 4),
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 40.0),
-                                    child: Text(
-                                      location,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.black54,
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: Colors.blueAccent,
+                                      child: Text(
+                                        post['userName']!.isNotEmpty
+                                            ? post['userName']![0]
+                                            : '?',
+                                        style: TextStyle(color: Colors.white),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: isAssigned == 'true'
-                                      ? Colors.green
-                                      : Colors.red,
-                                  borderRadius: BorderRadius.circular(12),
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            post['userName']!,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black87,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          if (post['location']!.isNotEmpty)
+                                            Text(
+                                              post['location']!,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.grey[700],
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                child: Text(
-                                  isAssigned == 'true'
-                                      ? 'Assigned'
-                                      : 'Not Assigned',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                              ),
+                               Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: post['isAssigned'] == 'true'
+                                        ? Colors.green
+                                        : Colors.red,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    post['isAssigned'] == 'true'
+                                        ? 'Assigned'
+                                        : 'Not Assigned',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                              ),
+                              
                             ],
                           ),
                         ),
-
-                        // Post Image
-                        Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: Container(
-                            width: double.infinity,
-                            height: 400,
-                            decoration: BoxDecoration(
-                              image: DecorationImage(
-                                image: NetworkImage(imageUrl),
-                                fit: BoxFit.cover,
-                              ),
+                        Container(
+                          width: double.infinity,
+                          height: 300,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+                            image: DecorationImage(
+                              image: NetworkImage(post['imageUrl']!),
+                              fit: BoxFit.cover,
                             ),
                           ),
                         ),
-
-                        // Description
                         Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Text(
-                            description,
+                            post['description']!,
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 15,
                               fontWeight: FontWeight.w500,
                               color: Colors.grey[800],
                             ),
@@ -262,36 +248,21 @@ class _UserfeedState extends State<Userfeed> {
           );
         },
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-
-          if (index == 1) {
-            _takePic();
-            setState(() {
-              _selectedIndex = 0;
-            });
-          } else if (index == 2) {
-            Navigator.pushNamed(context, '/account');
-          }
-        },
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_a_photo_rounded),
-            label: 'New Post',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Account',
-          ),
-        ],
+      bottomNavigationBar: UserBottomNavBar(
+                           currentIndex: _selectedIndex,
+                           onTap: (index) {
+                            setState(() {
+                              _selectedIndex = index;
+                            });
+                            if (index == 1) {
+                              _takePic();
+                              setState(() {
+                                _selectedIndex = 1;
+                              });
+                            } else if (index == 2) {
+                              Navigator.pushNamed(context, '/userAccount');
+                            }
+                            } 
       ),
     );
   }

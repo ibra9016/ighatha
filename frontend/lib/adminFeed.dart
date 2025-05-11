@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:frontend/components/adminNavBar.dart';
 import 'package:frontend/components/post_screen.dart';
 import 'package:frontend/config.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/postDetailPage.dart';
+import 'package:intl/intl.dart';
 
 class AdminFeed extends StatefulWidget {
   const AdminFeed({super.key});
@@ -20,9 +22,10 @@ class _AdminFeedState extends State<AdminFeed> {
   late SharedPreferences prefs;
   File? _imageFile;
   final ImagePicker _picker = ImagePicker();
+  
   int _selectedIndex = 0;
 
-  void _takePic() async {
+  void takePic() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.camera);
     if (image != null) {
       setState(() {
@@ -74,79 +77,145 @@ class _AdminFeedState extends State<AdminFeed> {
     prefs = await SharedPreferences.getInstance();
   }
 
-  void logout() async {
-    await prefs.clear();
-    Navigator.pushNamed(context, '/login');
-  }
-
   void handleStatusAssign(String postId) async {
-     String? centerId = prefs.getString("centerId");
+  String? centerId = prefs.getString("centerId");
 
   // Fetch crew members from API
-  final response = await http.post(
+  final responseCrew = await http.post(
     Uri.parse(url + '/fetchCrew'),
     headers: {"Content-type": "application/json"},
-    body: jsonEncode({"adminId": centerId}),
+    body: jsonEncode({"centerId": centerId}),
   );
 
-  if (response.statusCode != 200) {
+  final responseVehicle = await http.post(
+    Uri.parse(url + '/fetchVehicules'),
+    headers: {"Content-type": "application/json"},
+    body: jsonEncode({"centerId": centerId}),
+  );
+
+  if (responseCrew.statusCode != 200 || responseVehicle.statusCode != 200) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to fetch crew members')),
+      SnackBar(content: Text('Failed to fetch crew members or vehicles')),
     );
     return;
   }
 
-  final jsonres = jsonDecode(response.body);
-  //print(jsonres);
+  final crewjson = jsonDecode(responseCrew.body);
+  final vehiclejson = jsonDecode(responseVehicle.body);
   String? selectedCrew;
   String? selectedVehicle;
 
   // ✅ Populate crewMembers list from response
-     List<dynamic> crewList = jsonres['body'];
+  List<dynamic> crewList = crewjson['body'];
 
-  List<Map<String, String>> crewMembers = crewList.map<Map<String, String>>((item) {
+  List<Map<String, dynamic>> crewMembers = crewList.map<Map<String, dynamic>>((item) {
     return {
       'id': item['_id']?.toString() ?? '',
       'fullName': item['fullName']?.toString() ?? '',
+      'status': item['isBusy'] ?? false
     };
   }).toList();
 
-  // Example vehicle list (can fetch from API too if needed)
-  List<String> vehicles = ['Vehicle 1', 'Vehicle 2', 'Vehicle 3'];
+  // ✅ Vehicles: map with model & company + status
+  List<dynamic> vehicleList = vehiclejson['body'];
+  List<Map<String, dynamic>> vehicles = vehicleList.map<Map<String, dynamic>>((item) {
+    return {
+      'id': item['_id']?.toString() ?? '',
+      'model': item['model']?.toString() ?? '',
+      'company': item['company']?.toString() ?? '',
+      'status': item['isOccupied'] ?? false
+    };
+  }).toList();
 
   await showDialog(
     context: context,
     builder: (context) {
       return AlertDialog(
-        title: Text('Assign Task'),
+        title: Text('Assign Mission'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Crew Dropdown
             DropdownButtonFormField<String>(
               value: selectedCrew,
               hint: Text('Select Crew Member'),
               items: crewMembers.map((crew) {
-                return DropdownMenuItem(
-                  value: crew['id'],
-                  child: Text(crew['fullName'] ?? ''),
+                bool isOccupied = crew['status'] == true;
+                return DropdownMenuItem<String>(
+                  value: crew['id'],  // ✅ Always set the real ID
+                  child: Row(
+                    children: [
+                      Text(
+                        crew['fullName'] ?? '',
+                        style: TextStyle(
+                          color: isOccupied ? Colors.grey : Colors.black,
+                        ),
+                      ),
+                      if (isOccupied)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: Text(
+                            '(Occupied)',
+                            style: TextStyle(color: Colors.red, fontSize: 12),
+                          ),
+                        ),
+                    ],
+                  ),
                 );
               }).toList(),
               onChanged: (value) {
-                selectedCrew = value;
+                final selected = crewMembers.firstWhere((crew) => crew['id'] == value, orElse: () => {});
+                if (selected.isNotEmpty && selected['status'] != true) {
+                  setState(() {
+                    selectedCrew = value;
+                  });
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('This crew member is occupied. Please select another.')),
+                  );
+                }
               },
             ),
             SizedBox(height: 16),
+            // Vehicle Dropdown
             DropdownButtonFormField<String>(
               value: selectedVehicle,
               hint: Text('Select Vehicle'),
               items: vehicles.map((vehicle) {
-                return DropdownMenuItem(
-                  value: vehicle,
-                  child: Text(vehicle),
+                bool isOccupied = vehicle['status'] == true;
+                return DropdownMenuItem<String>(
+                  value: vehicle['id'],  // ✅ Always set the real ID
+                  child: Row(
+                    children: [
+                      Text(
+                        '${vehicle['model']} (${vehicle['company']})',
+                        style: TextStyle(
+                          color: isOccupied ? Colors.grey : Colors.black,
+                        ),
+                      ),
+                      if (isOccupied)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: Text(
+                            '(Occupied)',
+                            style: TextStyle(color: Colors.red, fontSize: 12),
+                          ),
+                        ),
+                    ],
+                  ),
                 );
               }).toList(),
               onChanged: (value) {
-                selectedVehicle = value;
+                final selected = vehicles.firstWhere((vehicle) => vehicle['id'] == value, orElse: () => {});
+                if (selected.isNotEmpty && selected['status'] != true) {
+                  setState(() {
+                    selectedVehicle = value;
+                  });
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('This vehicle is occupied. Please select another.')),
+                  );
+                }
               },
             ),
           ],
@@ -159,19 +228,22 @@ class _AdminFeedState extends State<AdminFeed> {
           ElevatedButton(
             onPressed: () async {
               if (selectedCrew != null && selectedVehicle != null) {
-                final assignResponse = await http.post(
-                  Uri.parse(url + '/assignTask'),
+                final missionResponse = await http.post(
+                  Uri.parse(url + '/createMission'),
                   headers: {'Content-Type': 'application/json'},
                   body: jsonEncode({
-                    'postId': postId,
-                    'crewMemberId': selectedCrew, // Send ID
+                    'Admin': prefs.getString("userId"),
+                    'post': postId,
+                    'crewMember': selectedCrew,
                     'vehicle': selectedVehicle,
+                    'isCompleted': false,
+                    'startTime':DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now())
                   }),
                 );
 
-                if (assignResponse.statusCode == 200) {
+                if (missionResponse.statusCode == 200) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Task assigned successfully!')),
+                    SnackBar(content: Text('Mission assigned successfully!')),
                   );
                   setState(() {
                     _imageData = fetchImageUrls(); // Refresh posts
@@ -194,7 +266,10 @@ class _AdminFeedState extends State<AdminFeed> {
       );
     },
   );
-  }
+}
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -213,12 +288,6 @@ class _AdminFeedState extends State<AdminFeed> {
           ),
         ),
         backgroundColor: Colors.blueAccent,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout, color: Colors.white),
-            onPressed: logout,
-          ),
-        ],
         elevation: 4,
       ),
       body: FutureBuilder<List<Map<String, String>>>(
@@ -376,32 +445,25 @@ class _AdminFeedState extends State<AdminFeed> {
           );
         },
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+      bottomNavigationBar: AdminBottomNavBar(
+                          currentIndex: _selectedIndex,
+                          onTap: (index) {
+                            setState(() {
+                              _selectedIndex = index;
+                            });
 
-          if (index == 1) {
-            _takePic();
-            setState(() {
-              _selectedIndex = 0;
-            });
-          } else if (index == 2) {
-            Navigator.pushNamed(context, '/notifications');
-          } else if (index == 3) {
-            Navigator.pushNamed(context, '/account');
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.add_a_photo), label: 'New Post'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Alerts'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Account'),
-        ],
-      ),
+                            if (index == 1) {
+                              takePic();
+                              setState(() {
+                                _selectedIndex = 0;
+                              });
+                            } else if (index == 2) {
+                              Navigator.pushNamed(context, '/notifications');
+                            } else if (index == 3) {
+                              Navigator.pushNamed(context, '/adminAccount');
+                            }
+                          },
+                        ),
     );
   }
 }

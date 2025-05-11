@@ -1,10 +1,14 @@
 const centerService = require('../services/center.services');
+const userService = require('../services/user.services');
 
 exports.register = async(req,res,next)=>{
     try{
-        const {adress,centerType,vehiculesCount,workersCount} = req.body;
-        const success = await centerService.registerCenter(adress,centerType,vehiculesCount,workersCount);
-        res.json({status:true,success:"center registered successfully"});
+        const {adminId,address,centerType,vehiculesCount,workersCount} = req.body;
+        const center = await centerService.registerCenter(address,centerType,vehiculesCount,workersCount);
+        if(center){
+            const user = await userService.addCenter(adminId,center._id);
+            res.status(200).json({status:true,body:center._id}); 
+        }
     }   
     catch(err){
         throw err;

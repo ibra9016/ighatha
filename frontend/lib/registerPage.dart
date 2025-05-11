@@ -94,8 +94,8 @@ class _RegisterpageState extends State<Registerpage> {
     prefs.setString("token", token);
     Map<String, dynamic> jwtDecodedToken = JwtDecoder.decode(token);
     prefs.setString('userId', jwtDecodedToken['_id']);
-
-    // ✅ navigate to Admin Setup page
+    prefs.setString("centerId", jwtDecodedToken['center']);
+    prefs.setString("username", jwtDecodedToken['username']);
     Navigator.pushNamed(context, '/adminSetup');
   }
 

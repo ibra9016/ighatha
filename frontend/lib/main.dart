@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/adminFeed.dart';
+import 'package:frontend/components/accountPage.dart';
+import 'package:frontend/components/accountPageUser.dart';
 import 'package:frontend/components/post_screen.dart';
 import 'package:frontend/components/test.dart';
 import 'package:frontend/userFeed.dart';
@@ -12,7 +14,7 @@ import 'package:frontend/admin.setup.dart';
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  runApp(MyApp(token: prefs.getString('token'),center: prefs.getString('center')));
+  runApp(MyApp(token: prefs.getString('token'),center: prefs.getString('centerId')));
 }
 
 class MyApp extends StatelessWidget {
@@ -39,14 +41,16 @@ class MyApp extends StatelessWidget {
         '/register':(context)=>Registerpage(),
         '/userFeed':(context)=>Userfeed(),
         '/adminFeed':(context)=>AdminFeed(),
-        '/adminSetup': (context) => AdminSetupPage()
+        '/adminSetup': (context) => AdminSetupPage(),
+        '/adminAccount':(context) => AccountPage(),
+        '/userAccount':(context)=> UserAccountPage()
       },
       debugShowCheckedModeBanner: false,
         home:(
 
           token != null? 
                   isAdmin == true? 
-                         center == null? 
+                         center == ""?
                                   AdminSetupPage():
                                   AdminFeed():
                     Userfeed():

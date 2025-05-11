@@ -14,11 +14,21 @@ class crewService{
 
    static async fetchCrewMembers(centerId){
     try{
-    const result = crewModel.find({center:adminId});
+    const result = crewModel.find({center:centerId});
     return await result
     }
     catch(err){
         throw err
+    }
+   }
+
+   static async deleteMember(memberId){
+    try{
+        const result = crewModel.findByIdAndDelete(memberId)
+        return await result
+    }
+    catch(err){
+        throw err;
     }
    }
 }
