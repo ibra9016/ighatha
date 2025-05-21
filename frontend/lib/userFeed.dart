@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/components/post_screen.dart';
 import 'package:frontend/components/userNavBar.dart';
 import 'package:frontend/config.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -44,21 +45,52 @@ class _UserfeedState extends State<Userfeed> {
   }
 
   Future<List<Map<String, String>>> fetchImageUrls() async {
-    final response = await http.post(Uri.parse(url + '/getPics'));
+  final response = await http.post(Uri.parse(url + '/getPics'));
 
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body)['file'];
+  if (response.statusCode == 200) {
+    final List data = jsonDecode(response.body)['file'];
 
-      return data.map<Map<String, String>>((item) {
-        return {
-          'imageUrl': url + item['image']['filepath'],
-          'description': item['description'] ?? 'No description available',
-          'userName': item['postedBy']['username'] ?? 'Unknown User',
-          '_id': item['_id'] ?? 'no id',
-          'isAssigned': item['isAssigned'].toString(),
-          'location': item['location'] ?? 'Unknown Location',
-        };
-      }).toList().reversed.toList();
+    List<Map<String, String>> mappedItems = await Future.wait(
+          data.map<Future<Map<String, String>>>((item) async {
+            String locationString = 'Unknown location';
+            double latitude = 0.0;
+            double longitude = 0.0;
+
+            try {
+              final location = item['location'];
+              if (location != null &&
+                  location['latitude'] != null &&
+                  location['longtitude'] != null) {
+                latitude = double.parse(location['latitude']);
+                longitude = double.parse(location['longtitude']);
+
+                List<Placemark> placemarks =
+                    await placemarkFromCoordinates(latitude, longitude);
+
+                if (placemarks.isNotEmpty) {
+                  Placemark place = placemarks[0];
+                  locationString = "${place.locality}, ${place.administrativeArea}";
+                }
+              }
+            } catch (e) {
+              print('Error parsing location for item ${item['_id']}: $e');
+            }
+
+            return {
+              'imageUrl': url + (item['image']['filepath'] ?? ''),
+              'description': item['description'] ?? 'No description available',
+              'userName': item['postedBy']['username'] ?? 'Unknown User',
+              '_id': item['_id'] ?? 'no id',
+              'isAssigned': item['isAssigned'].toString(),
+              'location': locationString,
+              'latitude': latitude.toString(),
+              'longitude': longitude.toString(),
+            };
+          }).toList(),
+        );
+
+
+    return mappedItems.reversed.toList();
     } else {
       throw Exception('Failed to load post');
     }
@@ -96,7 +128,7 @@ class _UserfeedState extends State<Userfeed> {
             letterSpacing: 1.2,
           ),
         ),
-        backgroundColor: Colors.blueAccent, // solid blue color
+        backgroundColor: Colors.black, // solid blue color
         elevation: 4,
       ),
       body: FutureBuilder<List<Map<String, String>>>(
@@ -257,7 +289,7 @@ class _UserfeedState extends State<Userfeed> {
                             if (index == 1) {
                               _takePic();
                               setState(() {
-                                _selectedIndex = 1;
+                                _selectedIndex = 0;
                               });
                             } else if (index == 2) {
                               Navigator.pushNamed(context, '/userAccount');

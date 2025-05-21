@@ -17,7 +17,7 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
-  int _selectedIndex = 3;
+  int _selectedIndex = 2;
   late SharedPreferences prefs;
   String username = 'Guest';
   String? centerId;
@@ -532,8 +532,8 @@ void markMissionAsDone(String missionId) async{
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 20),
-                   buildMissionDropdown(),
-                   buildFinishedMissionDropdown(),
+                  buildMissionDropdown(),
+                  buildFinishedMissionDropdown(),
                   buildCrewCard('Crew Members', crew),
                   buildVehicleCard('Vehicles', vehicles),
                   const SizedBox(height: 24),
@@ -571,10 +571,8 @@ void markMissionAsDone(String missionId) async{
                             if (index == 1) {
                               takePic();
                               setState(() {
-                                _selectedIndex = 3;
+                                _selectedIndex = 2;
                               });
-                            } else if (index == 2) {
-                              Navigator.pushNamed(context, '/notifications');
                             } else if (index == 0) {
                               Navigator.pushNamed(context, '/adminFeed');
                             }

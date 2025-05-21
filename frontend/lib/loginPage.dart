@@ -21,14 +21,12 @@ class _LoginpageState extends State<Loginpage> {
   void loginUser() async{
     
     if(_usernameController.text.isEmpty && _passwordController.text.isEmpty){
-      print("working");
       return;
     }
     var regBody = {
       "username": _usernameController.text,
       "password": _passwordController.text
     };
-
     var response = await http.post(
       Uri.parse(url+'/loginUser'),
       headers: {"Content-type": "application/json"},
@@ -36,19 +34,31 @@ class _LoginpageState extends State<Loginpage> {
     );
     var jsonResponse = jsonDecode(response.body);
     if(jsonResponse['status'] == true){
-      print("working");
       var token = jsonResponse['token'];
       prefs.setString("token", token);
       Map<String,dynamic> jwtDecodedToken = JwtDecoder.decode(token);
       var isAdmin = jwtDecodedToken['isAdmin'];
       prefs.setString('userId', jwtDecodedToken['_id']);
-      prefs.setString("centerId", jwtDecodedToken['center']);
       prefs.setString("username",jwtDecodedToken['username']);
-        isAdmin == true? 
+      if(jwtDecodedToken['superAdmin'] != null){
+        await prefs.setBool("superAdmin", true);
+       Navigator.pushNamed(context, '/superAdminfeed');
+      }
+      else{
+        if(jwtDecodedToken['isActive'] != null && jwtDecodedToken['isActive'] == false &&  jwtDecodedToken['center'] !=""){
+          ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text('Your account hasnt been activated yet!')),
+                                                     );
+          await prefs.clear();
+          return;
+        }
+      prefs.setString("centerId", jwtDecodedToken['center']);
+        isAdmin == true?
                 prefs.getString("centerId")==""? 
                         Navigator.pushNamed(context, '/adminSetup'):
                         Navigator.pushNamed(context, '/adminFeed'):
           Navigator.pushNamed(context, '/userFeed');
+          }
     
     }
     else{
@@ -111,21 +121,11 @@ class _LoginpageState extends State<Loginpage> {
                             hintText: "Password",
                             obscureText: true
               ),
-              SizedBox(height: 20),
+              SizedBox(height: 40),
         
               //forgot password
-              Row(mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  GestureDetector(onTap: () {forgotPass();},
-                  child: Text(
-                    "Forgot Password?",
-                    style: TextStyle(color: Colors.grey[600]),
-                    ),),
-                    SizedBox(width: 20),
-                ],
-              ),
         
-              SizedBox(height: 20),
+        
               //signin button
           
               MyButton(onTap: loginUser,buttonText: "Sign in",),

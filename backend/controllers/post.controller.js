@@ -6,13 +6,13 @@ exports.register = async(req,res,next)=>{
         if(!req.file) return res.status(400).json({ error: 'No file uploaded' });
         const { filename, path } = req.file;
         const {postedBy,description,location,isAssigned} = req.body;
-
+        finalLocation = JSON.parse(location)
   // Make the file path relative
   const relativePath = path.replace(/^.*?uploads/, '/uploads');
     // Save the photo metadata (filename and filepath)
     const savedPhoto = await postService.registerPost(postedBy,
                                                       description,
-                                                      location,                                                      
+                                                      finalLocation,                                                      
                                                       filename,
                                                       relativePath,
                                                       isAssigned);

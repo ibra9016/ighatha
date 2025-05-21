@@ -6,10 +6,15 @@ const bcrypt = require('bcrypt');
 const {Schema} = mongoose;
 
 const userSchema = new Schema({
-       fullName:{
+    fullName:{
         type:String
     },
     username:{
+        type:String,
+        required:true,
+        unique:true
+    },
+    email:{
         type:String,
         required:true,
         unique:true
@@ -21,6 +26,12 @@ const userSchema = new Schema({
     isAdmin:{
         type:Boolean,
         required:true,
+    },
+    superAdmin:{
+        type:Boolean
+    },
+    isActive:{
+        type:Boolean
     },
    center:{
            type: mongoose.Schema.Types.ObjectId,

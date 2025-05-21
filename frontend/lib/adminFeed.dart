@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:frontend/components/adminNavBar.dart';
+import 'package:frontend/components/locationMapPage.dart';
 import 'package:frontend/components/post_screen.dart';
 import 'package:frontend/config.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,7 +24,7 @@ class _AdminFeedState extends State<AdminFeed> {
   late SharedPreferences prefs;
   File? _imageFile;
   final ImagePicker _picker = ImagePicker();
-  
+
   int _selectedIndex = 0;
 
   void takePic() async {
@@ -51,16 +53,46 @@ class _AdminFeedState extends State<AdminFeed> {
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body)['file'];
 
-      return data.map<Map<String, String>>((item) {
-        return {
-          'imageUrl': url + item['image']['filepath'],
-          'description': item['description'] ?? 'No description available',
-          'userName': item['postedBy']['username'] ?? 'Unknown User',
-          '_id': item['_id'] ?? 'no id',
-          'isAssigned': item['isAssigned'].toString(),
-          'location': item['location'] ?? '',
-        };
-      }).toList().reversed.toList();
+      List<Map<String, String>> mappedItems = await Future.wait(
+        data.map<Future<Map<String, String>>>((item) async {
+          String locationString = 'Unknown location';
+          double latitude = 0.0;
+          double longitude = 0.0;
+
+          try {
+            final location = item['location'];
+            print("this is the location $location");
+            if (location != null &&
+                location['latitude'] != null &&
+                location['longtitude'] != null) {
+              latitude = double.parse(location['latitude']);
+              longitude = double.parse(location['longtitude']);
+
+              List<Placemark> placemarks = await placemarkFromCoordinates(latitude, longitude);
+                print("this is local $placemarks");
+              if (placemarks.isNotEmpty) {
+                Placemark place = placemarks[0];
+                locationString = "${place.locality}, ${place.administrativeArea}";
+                
+              }
+            }
+          } catch (e) {
+            print('Error parsing location for item ${item['_id']}: $e');
+          }
+
+          return {
+            'imageUrl': url + (item['image']['filepath'] ?? ''),
+            'description': item['description'] ?? 'No description available',
+            'userName': item['postedBy']['username'] ?? 'Unknown User',
+            '_id': item['_id'] ?? 'no id',
+            'isAssigned': item['isAssigned'].toString(),
+            'location': locationString,
+            'latitude': latitude.toString(),
+            'longitude': longitude.toString(),
+          };
+        }).toList(),
+      );
+      return mappedItems.reversed.toList();
     } else {
       throw Exception('Failed to load post');
     }
@@ -78,198 +110,199 @@ class _AdminFeedState extends State<AdminFeed> {
   }
 
   void handleStatusAssign(String postId) async {
-  String? centerId = prefs.getString("centerId");
+    String? centerId = prefs.getString("centerId");
 
-  // Fetch crew members from API
-  final responseCrew = await http.post(
-    Uri.parse(url + '/fetchCrew'),
-    headers: {"Content-type": "application/json"},
-    body: jsonEncode({"centerId": centerId}),
-  );
-
-  final responseVehicle = await http.post(
-    Uri.parse(url + '/fetchVehicules'),
-    headers: {"Content-type": "application/json"},
-    body: jsonEncode({"centerId": centerId}),
-  );
-
-  if (responseCrew.statusCode != 200 || responseVehicle.statusCode != 200) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to fetch crew members or vehicles')),
+    final responseCrew = await http.post(
+      Uri.parse(url + '/fetchCrew'),
+      headers: {"Content-type": "application/json"},
+      body: jsonEncode({"centerId": centerId}),
     );
-    return;
-  }
 
-  final crewjson = jsonDecode(responseCrew.body);
-  final vehiclejson = jsonDecode(responseVehicle.body);
-  String? selectedCrew;
-  String? selectedVehicle;
+    final responseVehicle = await http.post(
+      Uri.parse(url + '/fetchVehicules'),
+      headers: {"Content-type": "application/json"},
+      body: jsonEncode({"centerId": centerId}),
+    );
 
-  // ✅ Populate crewMembers list from response
-  List<dynamic> crewList = crewjson['body'];
-
-  List<Map<String, dynamic>> crewMembers = crewList.map<Map<String, dynamic>>((item) {
-    return {
-      'id': item['_id']?.toString() ?? '',
-      'fullName': item['fullName']?.toString() ?? '',
-      'status': item['isBusy'] ?? false
-    };
-  }).toList();
-
-  // ✅ Vehicles: map with model & company + status
-  List<dynamic> vehicleList = vehiclejson['body'];
-  List<Map<String, dynamic>> vehicles = vehicleList.map<Map<String, dynamic>>((item) {
-    return {
-      'id': item['_id']?.toString() ?? '',
-      'model': item['model']?.toString() ?? '',
-      'company': item['company']?.toString() ?? '',
-      'status': item['isOccupied'] ?? false
-    };
-  }).toList();
-
-  await showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: Text('Assign Mission'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Crew Dropdown
-            DropdownButtonFormField<String>(
-              value: selectedCrew,
-              hint: Text('Select Crew Member'),
-              items: crewMembers.map((crew) {
-                bool isOccupied = crew['status'] == true;
-                return DropdownMenuItem<String>(
-                  value: crew['id'],  // ✅ Always set the real ID
-                  child: Row(
-                    children: [
-                      Text(
-                        crew['fullName'] ?? '',
-                        style: TextStyle(
-                          color: isOccupied ? Colors.grey : Colors.black,
-                        ),
-                      ),
-                      if (isOccupied)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Text(
-                            '(Occupied)',
-                            style: TextStyle(color: Colors.red, fontSize: 12),
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                final selected = crewMembers.firstWhere((crew) => crew['id'] == value, orElse: () => {});
-                if (selected.isNotEmpty && selected['status'] != true) {
-                  setState(() {
-                    selectedCrew = value;
-                  });
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('This crew member is occupied. Please select another.')),
-                  );
-                }
-              },
-            ),
-            SizedBox(height: 16),
-            // Vehicle Dropdown
-            DropdownButtonFormField<String>(
-              value: selectedVehicle,
-              hint: Text('Select Vehicle'),
-              items: vehicles.map((vehicle) {
-                bool isOccupied = vehicle['status'] == true;
-                return DropdownMenuItem<String>(
-                  value: vehicle['id'],  // ✅ Always set the real ID
-                  child: Row(
-                    children: [
-                      Text(
-                        '${vehicle['model']} (${vehicle['company']})',
-                        style: TextStyle(
-                          color: isOccupied ? Colors.grey : Colors.black,
-                        ),
-                      ),
-                      if (isOccupied)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Text(
-                            '(Occupied)',
-                            style: TextStyle(color: Colors.red, fontSize: 12),
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                final selected = vehicles.firstWhere((vehicle) => vehicle['id'] == value, orElse: () => {});
-                if (selected.isNotEmpty && selected['status'] != true) {
-                  setState(() {
-                    selectedVehicle = value;
-                  });
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('This vehicle is occupied. Please select another.')),
-                  );
-                }
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (selectedCrew != null && selectedVehicle != null) {
-                final missionResponse = await http.post(
-                  Uri.parse(url + '/createMission'),
-                  headers: {'Content-Type': 'application/json'},
-                  body: jsonEncode({
-                    'Admin': prefs.getString("userId"),
-                    'post': postId,
-                    'crewMember': selectedCrew,
-                    'vehicle': selectedVehicle,
-                    'isCompleted': false,
-                    'startTime':DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now())
-                  }),
-                );
-
-                if (missionResponse.statusCode == 200) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Mission assigned successfully!')),
-                  );
-                  setState(() {
-                    _imageData = fetchImageUrls(); // Refresh posts
-                  });
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to assign task')),
-                  );
-                }
-                Navigator.of(context).pop();
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Please select both crew and vehicle')),
-                );
-              }
-            },
-            child: Text('Assign'),
-          ),
-        ],
+    if (responseCrew.statusCode != 200 || responseVehicle.statusCode != 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to fetch crew members or vehicles')),
       );
-    },
-  );
-}
+      return;
+    }
 
+    final crewjson = jsonDecode(responseCrew.body);
+    final vehiclejson = jsonDecode(responseVehicle.body);
 
+    List<dynamic> crewList = crewjson['body'];
+    List<dynamic> vehicleList = vehiclejson['body'];
 
+    List<Map<String, dynamic>> crewMembers = crewList.map<Map<String, dynamic>>((item) {
+      return {
+        'id': item['_id']?.toString() ?? '',
+        'fullName': item['fullName']?.toString() ?? '',
+        'status': item['isBusy'] ?? false,
+      };
+    }).toList();
+
+    List<Map<String, dynamic>> vehicles = vehicleList.map<Map<String, dynamic>>((item) {
+      return {
+        'id': item['_id']?.toString() ?? '',
+        'model': item['model']?.toString() ?? '',
+        'company': item['company']?.toString() ?? '',
+        'status': item['isOccupied'] ?? false,
+      };
+    }).toList();
+
+    String? selectedCrew;
+    String? selectedVehicle;
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: Text('Assign Mission'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: selectedCrew,
+                  hint: Text('Select Crew Member'),
+                  items: crewMembers.map((crew) {
+                    bool isOccupied = crew['status'] == true;
+                    return DropdownMenuItem<String>(
+                      value: crew['id'],
+                      child: Row(
+                        children: [
+                          Text(
+                            crew['fullName'] ?? '',
+                            style: TextStyle(
+                              color: isOccupied ? Colors.grey : Colors.black,
+                            ),
+                          ),
+                          if (isOccupied)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8.0),
+                              child: Text(
+                                '(Occupied)',
+                                style: TextStyle(color: Colors.red, fontSize: 12),
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    final selected = crewMembers.firstWhere(
+                      (crew) => crew['id'] == value,
+                      orElse: () => {},
+                    );
+                    if (selected.isNotEmpty && selected['status'] != true) {
+                      setStateDialog(() {
+                        selectedCrew = value;
+                      });
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('This crew member is occupied. Please select another.')),
+                      );
+                    }
+                  },
+                ),
+                SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedVehicle,
+                  hint: Text('Select Vehicle'),
+                  items: vehicles.map((vehicle) {
+                    bool isOccupied = vehicle['status'] == true;
+                    return DropdownMenuItem<String>(
+                      value: vehicle['id'],
+                      child: Row(
+                        children: [
+                          Text(
+                            '${vehicle['model']} (${vehicle['company']})',
+                            style: TextStyle(
+                              color: isOccupied ? Colors.grey : Colors.black,
+                            ),
+                          ),
+                          if (isOccupied)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8.0),
+                              child: Text(
+                                '(Occupied)',
+                                style: TextStyle(color: Colors.red, fontSize: 12),
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    final selected = vehicles.firstWhere(
+                      (vehicle) => vehicle['id'] == value,
+                      orElse: () => {},
+                    );
+                    if (selected.isNotEmpty && selected['status'] != true) {
+                      setStateDialog(() {
+                        selectedVehicle = value;
+                      });
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('This vehicle is occupied. Please select another.')),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (selectedCrew != null && selectedVehicle != null) {
+                    final missionResponse = await http.post(
+                      Uri.parse(url + '/createMission'),
+                      headers: {'Content-Type': 'application/json'},
+                      body: jsonEncode({
+                        'Admin': prefs.getString("userId"),
+                        'post': postId,
+                        'crewMember': selectedCrew,
+                        'vehicle': selectedVehicle,
+                        'isCompleted': false,
+                        'startTime': DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now()),
+                      }),
+                    );
+
+                    if (missionResponse.statusCode == 200) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Mission assigned successfully!')),
+                      );
+                      setState(() {
+                        _imageData = fetchImageUrls(); // Refresh posts
+                      });
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to assign task')),
+                      );
+                    }
+                    Navigator.of(context).pop();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Please select both crew and vehicle')),
+                    );
+                  }
+                },
+                child: Text('Assign'),
+              ),
+            ],
+          );
+        });
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -287,7 +320,7 @@ class _AdminFeedState extends State<AdminFeed> {
             letterSpacing: 1.2,
           ),
         ),
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: Colors.black,
         elevation: 4,
       ),
       body: FutureBuilder<List<Map<String, String>>>(
@@ -300,8 +333,7 @@ class _AdminFeedState extends State<AdminFeed> {
             return Center(child: Text('Error: ${snapshot.error}'));
 
           final posts = snapshot.data!;
-          if (posts.isEmpty)
-            return Center(child: Text('No Posts found'));
+          if (posts.isEmpty) return Center(child: Text('No Posts found'));
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -338,7 +370,8 @@ class _AdminFeedState extends State<AdminFeed> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -369,14 +402,31 @@ class _AdminFeedState extends State<AdminFeed> {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                           if (post['location']!.isNotEmpty)
-                                            Text(
-                                              post['location']!,
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey[700],
+                                            GestureDetector(
+                                              onTap: () {
+                                                final double latitude =
+                                                    double.parse(post['latitude']!);
+                                                final double longitude =
+                                                    double.parse(post['longitude']!);
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) => LocationMapPage(
+                                                      latitude: latitude,
+                                                      longitude: longitude,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              child: Text(
+                                                post['location']!,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: Colors.blue,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                                maxLines: 1,
                                               ),
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 1,
                                             ),
                                         ],
                                       ),
@@ -391,7 +441,8 @@ class _AdminFeedState extends State<AdminFeed> {
                                   }
                                 },
                                 child: Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  padding:
+                                      EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: post['isAssigned'] == 'true'
                                         ? Colors.green
@@ -416,7 +467,8 @@ class _AdminFeedState extends State<AdminFeed> {
                           width: double.infinity,
                           height: 300,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+                            borderRadius:
+                                BorderRadius.vertical(top: Radius.circular(10)),
                             image: DecorationImage(
                               image: NetworkImage(post['imageUrl']!),
                               fit: BoxFit.cover,
@@ -446,24 +498,23 @@ class _AdminFeedState extends State<AdminFeed> {
         },
       ),
       bottomNavigationBar: AdminBottomNavBar(
-                          currentIndex: _selectedIndex,
-                          onTap: (index) {
-                            setState(() {
-                              _selectedIndex = index;
-                            });
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
 
-                            if (index == 1) {
-                              takePic();
-                              setState(() {
-                                _selectedIndex = 0;
-                              });
-                            } else if (index == 2) {
-                              Navigator.pushNamed(context, '/notifications');
-                            } else if (index == 3) {
-                              Navigator.pushNamed(context, '/adminAccount');
-                            }
-                          },
-                        ),
+          if (index == 1) {
+            takePic();
+            setState(() {
+              _selectedIndex = 0;
+            });
+          } 
+          else if (index == 2) {
+            Navigator.pushNamed(context, '/adminAccount');
+          }
+        },
+      ),
     );
   }
 }

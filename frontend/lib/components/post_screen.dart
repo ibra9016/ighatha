@@ -18,12 +18,12 @@ class PostScreen extends StatefulWidget {
 
 class _PostScreenState extends State<PostScreen> {
     String finalLocation="";
+    loc.LocationData? currentLocation;
   final TextEditingController _textController = TextEditingController();
   late SharedPreferences prefs;
 
   Future<void> _getLocation() async{
     loc.Location location = loc.Location();
-  loc.LocationData? currentLocation;
 
   try {
     //Check if location service is enabled
@@ -49,11 +49,11 @@ class _PostScreenState extends State<PostScreen> {
     // Fetch current location
     currentLocation = await location.getLocation();
     List<Placemark> placemarks = await placemarkFromCoordinates(
-      currentLocation.latitude!,currentLocation.longitude!);
+      currentLocation!.latitude!,currentLocation!.longitude!);
 
   // Get the first placemark (if available)
   Placemark place = placemarks[0];
-    finalLocation = "${place.locality},${place.administrativeArea}}";
+    finalLocation = "${place.locality},${place.administrativeArea}";
   } catch (e) {
     print('Error fetching location: $e');
     return;
@@ -71,11 +71,13 @@ class _PostScreenState extends State<PostScreen> {
         'photo',  
         _imageFile!.path,
       ),
-    );
-    
+    ); 
     request.fields['description'] = _textController.text;
     request.fields['postedBy'] = prefs.getString('userId')!;
-    request.fields['location'] = finalLocation;
+    request.fields['location'] = jsonEncode({
+              "longtitude":currentLocation!.longitude!.toString(),
+              "latitude":currentLocation!.latitude!.toString()
+                });
     request.fields['isAssigned'] = "false";
     final response = await request.send();
 

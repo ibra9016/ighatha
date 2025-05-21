@@ -19,6 +19,7 @@ class _RegisterpageState extends State<Registerpage> {
     bool _obscureText = true;
     late SharedPreferences prefs;
     TextEditingController _usernamecontroller = TextEditingController();
+    TextEditingController _emailcontroller = TextEditingController();
     TextEditingController _passwordController2 = TextEditingController();
   // ignore: unused_element
   void _togglePasswordVisibility() {
@@ -42,8 +43,10 @@ class _RegisterpageState extends State<Registerpage> {
   void resgisterUser() async {
     if(_usernamecontroller.text.isEmpty && _passwordController2.text.isEmpty) return ;
     bool isAdmin = false;
+    String email = _emailcontroller.text.trim().toLowerCase();
     var regBody = {
       "username": _usernamecontroller.text,
+      "email": email,
       "password":_passwordController2.text,
       "isAdmin": isAdmin,
     };
@@ -58,8 +61,8 @@ class _RegisterpageState extends State<Registerpage> {
       var token = jsonResponse['token'];
       prefs.setString("token", token);
       Map<String,dynamic> jwtDecodedToken = JwtDecoder.decode(token);
-      var isAdmin = jwtDecodedToken['isAdmin'];
       prefs.setString('userId', jwtDecodedToken['_id']);
+      prefs.setString("username",jwtDecodedToken['username']);
       Navigator.pushNamed(context, '/userFeed');
     }
     setState(() {
@@ -74,12 +77,15 @@ class _RegisterpageState extends State<Registerpage> {
   }
 
   void registerAdmin() async {
-  if (_usernamecontroller.text.isEmpty && _passwordController2.text.isEmpty) return;
+  if (_usernamecontroller.text.isEmpty && _passwordController2.text.isEmpty && _emailcontroller.text.isEmpty) return;
   bool isAdmin = true;
+  String email = _emailcontroller.text.trim().toLowerCase();
   var regBody = {
     "username": _usernamecontroller.text,
+    "email":email,
     "password": _passwordController2.text,
     "isAdmin": isAdmin,
+    "isActive":false
   };
 
   var response = await http.post(
@@ -101,6 +107,7 @@ class _RegisterpageState extends State<Registerpage> {
 
   setState(() {
     _usernamecontroller.clear();
+    _emailcontroller.clear();
     _passwordController2.clear();
   });
 }
@@ -208,6 +215,12 @@ class _RegisterpageState extends State<Registerpage> {
                             hintText: "Username",
                             obscureText: false),
               SizedBox(height: 10),
+              Mytextfield(
+                controller: _emailcontroller,
+                            hintText: "Email",
+                            obscureText: false
+              ),
+              SizedBox(height: 10),
               //password textfield
               Mytextfield(
                 controller: _passwordController2,
@@ -225,6 +238,12 @@ class _RegisterpageState extends State<Registerpage> {
                 Mytextfield(controller: _usernamecontroller,
                             hintText: "Username",
                             obscureText: false),
+              SizedBox(height: 10),
+              Mytextfield(
+                controller: _emailcontroller,
+                            hintText: "Email",
+                            obscureText: false
+              ),
               SizedBox(height: 10),
               //password textfield
               Mytextfield(

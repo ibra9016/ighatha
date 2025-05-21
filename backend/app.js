@@ -6,6 +6,8 @@ const centerRoute = require('./routers/center.router');
 const postRoute = require('./routers/post.router');
 const crewRoute = require('./routers/crew.router');
 const missionRoute = require('./routers/mission.router');
+const requestRoute = require('./routers/centerReques.router');
+const cors = require('cors');
 
 const app = express();
 app.use(body_parser.json());
@@ -15,6 +17,8 @@ app.use('/',centerRoute);
 app.use('/',postRoute);
 app.use('/',crewRoute);
 app.use('/',missionRoute);
+app.use('/',requestRoute);
+
 app.use('/uploads', express.static('uploads'));
 
 module.exports = app;

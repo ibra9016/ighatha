@@ -20,11 +20,9 @@ const centerSchema = new Schema({
     },
     vehiculesCount:{
         type:Number,
-        required:true
     },
     workersCount:{
         type:Number,
-        required:true
     }
 });
 

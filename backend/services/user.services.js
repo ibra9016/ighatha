@@ -3,9 +3,9 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 
 class userService{
-    static async registerUser(username,password,isAdmin){
+    static async registerUser(username,email,password,isAdmin,isActive){
         try{
-            const createUser = new userModel({username,password,isAdmin});
+            const createUser = new userModel({username,email,password,isAdmin,isActive});
             return await createUser.save();
         }
         catch(err){
@@ -56,6 +56,9 @@ class userService{
 
     static async addCenter(userid,centerId){
         return userModel.updateOne({_id:userid}, {$set:{center:centerId}});
+    }
+    static async fetchAllUsers(){
+        return await userModel.find();
     }
 }
 
